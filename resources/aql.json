@@ -1,0 +1,22 @@
+{
+  "types": [
+    "dm_document"
+  ],
+  "columns": [
+    {
+      "name": "r_object_type"
+    },
+    {
+      "name": "object_name"
+    }
+  ],
+  "expression-set": {
+    "name": "expression-set",
+    "expressions": [
+      {
+        "expression-type": "fulltext",
+        "value": "emc"
+      }
+    ]
+  }
+}
