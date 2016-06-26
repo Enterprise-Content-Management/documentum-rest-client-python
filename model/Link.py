@@ -17,6 +17,7 @@ class Relation(object):
 
 
 # link relation
+REL_ABOUT = Relation('about', False)
 REL_SELF = Relation('self', False)
 REL_EDIT = Relation('edit', False)
 REL_DELETE = Relation('http://identifiers.emc.com/linkrel/delete', False)
@@ -56,12 +57,24 @@ REL_OBJECT_ASPECTS = Relation('http://identifiers.emc.com/linkrel/object-aspects
 
 class Link(object):
     def __init__(self, rel, href, is_template=False, title=None):
+        """
+        Init Link
+        :param rel: link relation
+        :param href: url
+        :param is_template: mark whether the link is normal url or url template
+        :param title: title of the link
+        """
+
         self._rel_ = rel
         self._href_ = href
         self._title_ = title
         self._is_template_ = is_template
 
     def request(self):
+        """
+        Get the instance of RestRequest, which contains the request url
+        :return: the instance of RestRequest
+        """
         if not self._is_template_:
             return RestRequest.RestRequest(self._href_)
         else:
