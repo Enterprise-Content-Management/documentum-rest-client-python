@@ -1,5 +1,4 @@
-[![Python: 2.7](https://img.shields.io/pypi/pyversions/Django.svg)](https://www.python.org/download/releases/2.7/)
-
+[![Python: 2.7](https://img.shields.io/pypi/pyversions/Django.svg)](https://www.python.org/download/releases/2.7/) 
 [![License: Apache 2](https://img.shields.io/hexpm/l/plug.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
 #REST Demo in Python
