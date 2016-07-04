@@ -34,7 +34,7 @@ It will do the following jobs for your reference.
 
 
 ##Instruction
-The instruction is for Windows. For other operating system, only steps 1-4 are different. Try your luck.
+The instruction is for Windows. For other operating system, only steps 1-4 are different. Please refer to https://docs.python.org/2/using/ for the installation of Python on different OS.
 
 1. Download and install [Python 2.7.x](https://www.python.org/downloads/)
 2. Add `python` to the environment variable PATH. Open a new console and run the command.
@@ -44,6 +44,7 @@ The instruction is for Windows. For other operating system, only steps 1-4 are d
 3. Add *pip* to the environment variable PATH. Open a console and run the command. 
 
         setx PATH "%PATH%;C:\Python27\Scripts"
+> __Tip:__ How to install/upgrade pip https://pip.pypa.io/en/stable/installing/
 
 4. To verify the environment variable PATH is modified successfully, Open a new console and the command as below to check if the path is appended.
 
@@ -53,13 +54,13 @@ The instruction is for Windows. For other operating system, only steps 1-4 are d
 
         pip install requests
 
-6. Extract the demo package and change directory to the folder.
+6. Navigate to the project home directory.
 
-        cd python-demo
+        cd documentum-rest-client-python
 
 7. Edit `rest.properties` or input the info during running the demo.
 
-8. Run the command to execute the demo.
+8. Run the command to execute the demo
 
         python RestDemo.py
 
