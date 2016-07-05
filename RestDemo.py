@@ -1,4 +1,5 @@
-import ConfigParser
+from configparser import ConfigParser
+from builtins import input
 
 import sys
 
@@ -29,6 +30,9 @@ DEMO_ANOTHER_SHARABLE_OBJECT = 'demo_another_sharable_obj'
 DEMO_LIGHT_WEITHT_OBJECT = 'demo_lightweight_obj'
 DEMO_OBJECT_TO_ATTACH = 'obj_to_attach'
 
+VERSION_72 = '7.2'
+VERSION_73 = '7.3'
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,62 +46,62 @@ class RestDemo:
 
     def _init_demo_items(self):
         product_info = self.client.get_product_info()
-        if product_info.get('properties').get('major') == '7.3':
+
+        all_items = [
+            [VERSION_72, 'Quit the demoo', self.quit],
+            [VERSION_72, 'Reset demo environment', self.reset_environment],
+            [VERSION_72, 'REST sysObject CRUD', self.demo_sysobject_crud],
+            [VERSION_72, 'REST content management', self.demo_content_management],
+            [VERSION_72, 'REST version management', self.demo_version_management],
+            [VERSION_72, 'REST DQL', self.demo_dql],
+            [VERSION_73, 'REST user, group and member CRUD', self.demo_user_group_member_crud],
+            [VERSION_72, 'REST search with URL parameters ', self.demo_simple_search],
+            [VERSION_73, 'REST search with AQL ', self.demo_aql_search],
+            [VERSION_72, 'REST formats ', self.demo_format],
+            [VERSION_72, 'REST network locations ', self.demo_network_location],
+            [VERSION_72, 'REST relation CRUD ', self.demo_relation_crud],
+            [VERSION_72, 'REST folder CRUD', self.demo_folder_crud],
+            [VERSION_72, 'REST type', self.demo_type],
+            [VERSION_73, 'REST value assistance', self.demo_value_assistance],
+            [VERSION_73, 'REST lightweight object', self.demo_lightweight_object],
+            [VERSION_73, 'REST aspect', self.demo_aspect],
+        ]
+
+        if product_info.get('properties').get('major') == VERSION_73:
             print('This is Documentum REST 7.3')
-            self.choices = {0: ['Reset demo environment', self.reset_environment],
-                            1: ['REST all demos', self.demo_all],
-                            2: ['REST sysObject CRUD', self.demo_sysobject_crud],
-                            3: ['REST content management', self.demo_content_management],
-                            4: ['REST version management', self.demo_version_management],
-                            5: ['REST DQL', self.demo_dql],
-                            6: ['REST user, group and member CRUD', self.demo_user_group_member_crud],
-                            7: ['REST search with URL parameters ', self.demo_simple_search],
-                            8: ['REST search with AQL ', self.demo_aql_search],
-                            9: ['REST formats ', self.demo_format],
-                            10: ['REST network locations ', self.demo_network_location],
-                            11: ['REST relation CRUD ', self.demo_relation_crud],
-                            12: ['REST folder CRUD', self.demo_folder_crud],
-                            13: ['REST type', self.demo_type],
-                            14: ['REST value assistance', self.demo_value_assistance],
-                            15: ['REST lightweight object', self.demo_lightweight_object],
-                            16: ['REST aspect', self.demo_aspect],
-                            }
-        elif product_info.get('properties').get('major') == '7.2':
+            self._populate_demo_items(all_items, VERSION_72, VERSION_73)
+        elif product_info.get('properties').get('major') == VERSION_72:
             print('This is Documentum REST 7.2')
-            self.choices = {0: ['Reset demo environment', self.reset_environment],
-                            1: ['REST all demos', self.demo_all],
-                            2: ['REST sysObject CRUD', self.demo_sysobject_crud],
-                            3: ['REST content management', self.demo_content_management],
-                            4: ['REST version management', self.demo_version_management],
-                            5: ['REST DQL', self.demo_dql],
-                            6: ['REST search with URL parameters ', self.demo_simple_search],
-                            7: ['REST formats ', self.demo_format],
-                            8: ['REST network locations ', self.demo_network_location],
-                            9: ['REST relation CRUD ', self.demo_relation_crud],
-                            10: ['REST folder CRUD', self.demo_folder_crud],
-                            11: ['REST type', self.demo_type],
-                            }
+            self._populate_demo_items(all_items, VERSION_72)
         else:
             logger.info('Unrecognized product version. Quit demo.')
             sys.exit(0)
 
+    def _populate_demo_items(self, all_items, *versions):
+        self.choices = {}
+        index = 0
+        for item in all_items:
+            if item[0] in versions:
+                self.choices[index] = item
+                index += 1
+
     def _init_client(self):
-        config_parser = ConfigParser.ConfigParser()
+        config_parser = ConfigParser()
         config_parser.read("resources/rest.properties")
         self.REST_URI = config_parser.get("environment", "rest.host")
-        rest_uri = raw_input("Input Documentum REST Entry Path: [default - %s]" % self.REST_URI)
+        rest_uri = input("Input Documentum REST Entry Path: [default - %s]" % self.REST_URI)
         if rest_uri:
             self.REST_URI = rest_uri
         self.REST_REPOSITORY = config_parser.get("environment", "rest.repository")
-        rest_repo = raw_input("Input Repository Name: [default - %s]" % self.REST_REPOSITORY)
+        rest_repo = input("Input Repository Name: [default - %s]" % self.REST_REPOSITORY)
         if rest_repo:
             self.REST_REPOSITORY = rest_repo
         self.REST_USER = config_parser.get("environment", "rest.username")
-        rest_user = raw_input("Input User Name: [default - %s]" % self.REST_USER)
+        rest_user = input("Input User Name: [default - %s]" % self.REST_USER)
         if rest_user:
             self.REST_USER = rest_user
         self.REST_PWD = config_parser.get("environment", "rest.password")
-        rest_pwd = raw_input("Input User Password: [default - %s]" % self.REST_PWD)
+        rest_pwd = input("Input User Password: [default - %s]" % self.REST_PWD)
         if rest_pwd:
             self.REST_PWD = rest_pwd
         self.client = RestClient.RestClient(self.REST_USER, self.REST_PWD, self.REST_URI, self.REST_REPOSITORY)
@@ -106,7 +110,7 @@ class RestDemo:
     def _init_logger():
         logging.getLogger("requests").setLevel(logging.WARNING)
 
-        is_debug = raw_input("Enable debugging messages (yes|no)? [default - no]")
+        is_debug = input("Enable debugging messages (yes|no)? [default - no]")
         if is_debug == 'yes':
             level = 'DEBUG'
         else:
@@ -129,6 +133,11 @@ class RestDemo:
                 }
             }
         })
+
+    @staticmethod
+    def quit():
+        logger.info("\nQuit the demo.")
+        sys.exit(0)
 
     def create_demo_cabinet(self):
         logger.info("\n+++++++++++++++++++++++++++++++Create temp cabinet Start+++++++++++++++++++++++++++++++")
@@ -280,7 +289,7 @@ class RestDemo:
         self.print_properties(new_content, 'object_name', 'r_object_id', 'format_name', 'full_content_size')
 
         logger.info('Create new rendition with large file for document %s...' % DEMO_NEW_DOCUMENT)
-        path = raw_input('Input the file path. Press \'Enter\' directly to skip uploading file:\n')
+        path = input('Input the file path. Press \'Enter\' directly to skip uploading file:\n')
         if path:
             try:
                 with open(path, 'rb') as f:
@@ -462,13 +471,13 @@ class RestDemo:
         logger.info("\n+++++++++++++++++++++++++++++++Value Assistance Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get the value assistance of the type...')
-        dm_type_str = raw_input(
+        dm_type_str = input(
             'Input the type name with fixed value assistance list. Press \'Enter\' directly to skip.\n')
         if dm_type_str:
             dm_type = self.client.get_type(dm_type_str)
 
             if dm_type:
-                included_property = raw_input(
+                included_property = input(
                     'Input attribute name of %s with fixed value assistance list. Press \'Enter\' directly to skip.\n'
                     % dm_type_str)
 
@@ -488,7 +497,7 @@ class RestDemo:
 
         # E.G. city_type.city depends on city_type.country
         # country China has cities Shanghai, Beijing, Chongqing, Grangzhou, Shenzhen and Tianjing
-        dm_type_str = raw_input(
+        dm_type_str = input(
             '\nInput the type name with value assistance dependencies. Press \'Enter\' directly to skip.\n')
         if dm_type_str:
             dm_type = self.client.get_type(dm_type_str)
@@ -497,9 +506,9 @@ class RestDemo:
                 logger.info('Attribute %s.%s has dependency %s' % (
                     dm_type.get('name'), attr.get('name'), attr.get('dependencies')))
 
-            attr_name = raw_input('Input the attribute name of %s which has dependencies:' % dm_type_str)
-            dependency_attr_name = raw_input('Input the dependency name of %s.%s:\n' % (dm_type_str, attr_name))
-            dependency_attr_value = raw_input('Input the dependency value of attribute %s:\n' % dependency_attr_name)
+            attr_name = input('Input the attribute name of %s which has dependencies:' % dm_type_str)
+            dependency_attr_name = input('Input the dependency name of %s.%s:\n' % (dm_type_str, attr_name))
+            dependency_attr_value = input('Input the dependency value of attribute %s:\n' % dependency_attr_name)
 
             properties = {dependency_attr_name: dependency_attr_value}
             value_assistance = self.client.get_value_assistance(dm_type,
@@ -623,7 +632,7 @@ class RestDemo:
 
         cabinet = self.client.get_cabinet(DEMO_CABINET)
 
-        sharable_type = raw_input('\nInput the sharable type. Press \'Enter\' directly to skip.\n')
+        sharable_type = input('\nInput the sharable type. Press \'Enter\' directly to skip.\n')
         if not sharable_type:
             logger.info('Skip lightweight object demo.')
         else:
@@ -634,7 +643,7 @@ class RestDemo:
                                                          object_name=DEMO_SHARABLE_OBJECT,
                                                          title='demo_sharable_type'))
 
-            lightweight_type = raw_input('\nInput the lightweight type:\n')
+            lightweight_type = input('\nInput the lightweight type:\n')
             logger.info('Create object %s of lightweight type %s...' % (DEMO_LIGHT_WEITHT_OBJECT, lightweight_type))
             lw_obj = self.client.create_sysobj(sharable_obj,
                                                ResourceUtility.generate_sysobject(lightweight_type,
@@ -686,7 +695,7 @@ class RestDemo:
         for entry in aspects.get_entries():
             logger.info('Aspect name: %s', entry.get('title'))
 
-        aspect_type = raw_input('\nInput the aspect type to attach... Press \'Enter\' directly to skip.\n')
+        aspect_type = input('\nInput the aspect type to attach... Press \'Enter\' directly to skip.\n')
 
         if aspect_type:
             cabinet = self.client.get_cabinet(DEMO_CABINET)
@@ -778,20 +787,25 @@ class RestDemo:
     def demo(self):
         print ("\nInput the number to show the demo.\n")
 
+        choice = self._get_choice()
+
+        self.prepare_env()
+        self.choices[choice][2]()
+        self.demo()
+        self.reset_environment()
+
+    def _get_choice(self):
         choice = -1
         while choice not in self.choices.keys():
             for k, v in self.choices.items():
-                print("%d. %s" % (k, v[0]))
+                print("%d. %s" % (k, v[1]))
 
-            user_choice = raw_input("\nWhat's your choice?\n")
+            user_choice = input("\nWhat's your choice?\n")
             if user_choice.isdigit():
                 choice = int(user_choice)
             else:
                 choice = -1
-
-        self.prepare_env()
-        self.choices[choice][1]()
-        self.reset_environment()
+        return choice
 
 
 def main():

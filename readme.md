@@ -28,7 +28,7 @@ It will do the following jobs for your reference.
 
 
 ##Requirements
-1. Python 2.7.x is installed.
+1. Python 2.7 - 3.5.
 2. Library [request](http://docs.python-requests.org/en/latest/) is installed.
 3. *Documentum REST Services 7.2* is deployed.
 
@@ -45,14 +45,15 @@ The instruction is for Windows. For other operating system, only steps 1-4 are d
 
         setx PATH "%PATH%;C:\Python27\Scripts"
 > __Tip:__ How to install/upgrade pip https://pip.pypa.io/en/stable/installing/
-
 4. To verify the environment variable PATH is modified successfully, Open a new console and the command as below to check if the path is appended.
 
         echo %PATH%       
 
-5. Run command to install library [requests](http://docs.python-requests.org/en/latest/)
+5. Run command to install library [requests](http://docs.python-requests.org/en/latest/) and other dependencies
 
         pip install requests
+        pip install configparser
+        pip install future
 
 6. Navigate to the project home directory.
 

@@ -1,5 +1,5 @@
-import Link
 import json
+import model.Link
 
 __author__ = 'wangc31'
 
@@ -132,7 +132,7 @@ class Resource(object):
         :param indent: indent of JSON representation
         :return: reference in JSON
         """
-        reference = {'href': self.find_link(Link.REL_SELF).href()}
+        reference = {'href': self.find_link(model.Link.REL_SELF).href()}
         return json.dumps(reference, indent=indent)
 
     @staticmethod
@@ -143,10 +143,10 @@ class Resource(object):
         :return: instance of model.Link
         """
         if 'href' in link_dict:
-            return Link.Link(link_dict['rel'], link_dict['href'], False,
-                             link_dict['title'] if 'title' in link_dict else None)
+            return model.Link.Link(link_dict['rel'], link_dict['href'], False,
+                                   link_dict['title'] if 'title' in link_dict else None)
         elif 'hreftemplate' in link_dict:
-            return Link.Link(link_dict['rel'], link_dict['hreftemplate'], True)
+            return model.Link.Link(link_dict['rel'], link_dict['hreftemplate'], True)
 
         return None
 
@@ -183,10 +183,10 @@ class Home(Resource):
         """
         for key in self.get('resources'):
             if key == rel.rel():
-                return Link.Link(key, self.get('resources').get(key).get('href'))
+                return model.Link.Link(key, self.get('resources').get(key).get('href'))
 
     def get_product_info_link(self):
-        return self.get_home_entry_link(Link.REL_ABOUT)
+        return self.get_home_entry_link(model.Link.REL_ABOUT)
 
     def get_home_entry_methods(self, rel):
         """
