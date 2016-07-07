@@ -67,7 +67,7 @@ class RestClient:
         :param params: URL parameters
         :return: cabinets resources
         """
-        return self._get_objects(self._get_repository(), REL_CABINETS, params=params)
+        return self._get_objects(self.get_current_repository(), REL_CABINETS, params=params)
 
     def get_cabinet(self, cabinet_name):
         """
@@ -129,7 +129,7 @@ class RestClient:
         :param params: URL parameters
         :return: types resource
         """
-        return self._get_objects(self._get_repository(), REL_TYPES, params=params)
+        return self._get_objects(self.get_current_repository(), REL_TYPES, params=params)
 
     def get_type(self, type_name):
         """
@@ -137,7 +137,7 @@ class RestClient:
         :param type_name: type name
         :return: type resource
         """
-        return self._get_object(self._get_repository(), REL_TYPES, 'title', type_name)
+        return self._get_object(self.get_current_repository(), REL_TYPES, 'title', type_name)
 
     def get_value_assistance(self, dm_type, assist_value_request, included_property=None):
         """
@@ -156,7 +156,7 @@ class RestClient:
         :param params: URL parameters
         :return: relations resource
         """
-        return self._get_objects(self._get_repository(), REL_RELATIONS, params=params)
+        return self._get_objects(self.get_current_repository(), REL_RELATIONS, params=params)
 
     def get_relation(self, parent, relation_name):
         """
@@ -173,7 +173,7 @@ class RestClient:
         :param params: URL parameters
         :return: formats resource
         """
-        return self._get_objects(self._get_repository(), REL_FORMATS, params=params)
+        return self._get_objects(self.get_current_repository(), REL_FORMATS, params=params)
 
     def get_format(self, format_name):
         """
@@ -181,7 +181,7 @@ class RestClient:
         :param format_name: format name
         :return: format resource
         """
-        return self._get_object(self._get_repository(), REL_FORMATS, 'title', format_name)
+        return self._get_object(self.get_current_repository(), REL_FORMATS, 'title', format_name)
 
     def get_network_locations(self, params=None):
         """
@@ -189,7 +189,7 @@ class RestClient:
         :param params: URL parameters
         :return: network locations resource
         """
-        return self._get_objects(self._get_repository(), REL_NETWORK_LOCATIONS, params=params)
+        return self._get_objects(self.get_current_repository(), REL_NETWORK_LOCATIONS, params=params)
 
     def get_network_location(self, network_location_name):
         """
@@ -197,7 +197,7 @@ class RestClient:
         :param network_location_name: network location name
         :return: network location resource
         """
-        return self._get_object(self._get_repository(), REL_NETWORK_LOCATIONS, 'title', network_location_name)
+        return self._get_object(self.get_current_repository(), REL_NETWORK_LOCATIONS, 'title', network_location_name)
 
     def get_relation_types(self, params=None):
         """
@@ -205,7 +205,7 @@ class RestClient:
         :param params: URL parameters
         :return: relation types resource
         """
-        return self._get_objects(self._get_repository(), REL_RELATION_TYPES, params)
+        return self._get_objects(self.get_current_repository(), REL_RELATION_TYPES, params)
 
     def get_relation_type(self, relation_type_name):
         """
@@ -213,7 +213,7 @@ class RestClient:
         :param relation_type_name: relation type name
         :return: relation type resource
         """
-        return self._get_object(self._get_repository(), REL_RELATION_TYPES, 'title', relation_type_name)
+        return self._get_object(self.get_current_repository(), REL_RELATION_TYPES, 'title', relation_type_name)
 
     def get_users(self, parent, params=None):
         """
@@ -230,7 +230,7 @@ class RestClient:
         :param user_name: user name
         :return: user resource
         """
-        return self._get_object(self._get_repository(), REL_USERS, 'title', user_name)
+        return self._get_object(self.get_current_repository(), REL_USERS, 'title', user_name)
 
     def get_group(self, group_name):
         """
@@ -238,7 +238,7 @@ class RestClient:
         :param group_name: group name
         :return: group resource
         """
-        return self._get_object(self._get_repository(), REL_GROUPS, 'title', group_name)
+        return self._get_object(self.get_current_repository(), REL_GROUPS, 'title', group_name)
 
     def get_folders(self, parent, params=None):
         """
@@ -282,7 +282,7 @@ class RestClient:
         :param params: URL parameters
         :return: aspects resource
         """
-        return self._get_objects(self._get_repository(), REL_ASPECT_TYPES, params=params)
+        return self._get_objects(self.get_current_repository(), REL_ASPECT_TYPES, params=params)
 
     def get_aspect(self, aspect_name):
         """
@@ -290,7 +290,18 @@ class RestClient:
         :param aspect_name: aspect name
         :return: aspect resource
         """
-        return self._get_object(self._get_repository(), REL_ASPECT_TYPES, aspect_name)
+        return self._get_object(self.get_current_repository(), REL_ASPECT_TYPES, aspect_name)
+
+    def get_batch_capabilities(self, params=None):
+        """
+        Get batch capabilities
+        :param params: URL parameters
+        :return:
+        """
+        return self._get_objects(self.get_current_repository(), REL_BATCH_CAPABILITIES, params=params)
+
+    def create_batch(self, batch):
+        return self._link_post(self.get_current_repository().find_link(REL_BATCHES), batch.representation()).resource()
 
     def create_cabinet(self, cabinet):
         """
@@ -298,7 +309,7 @@ class RestClient:
         :param cabinet: cabinet resource to create
         :return: created cabinet resource
         """
-        return self._create_object_by_representation(self._get_repository(), REL_CABINETS, cabinet).resource()
+        return self._create_object_by_representation(self.get_current_repository(), REL_CABINETS, cabinet).resource()
 
     def create_folder(self, parent, new_folder):
         """
@@ -345,7 +356,7 @@ class RestClient:
         :param new_user: user resource to create
         :return: created user resource
         """
-        return self._create_object_by_representation(self._get_repository(), REL_USERS, new_user).resource()
+        return self._create_object_by_representation(self.get_current_repository(), REL_USERS, new_user).resource()
 
     def create_group(self, new_group):
         """
@@ -353,7 +364,7 @@ class RestClient:
         :param new_group: group resource to create
         :return: created group resource
         """
-        return self._create_object_by_representation(self._get_repository(), REL_GROUPS, new_group).resource()
+        return self._create_object_by_representation(self.get_current_repository(), REL_GROUPS, new_group).resource()
 
     def create_relation(self, new_relation):
         """
@@ -361,7 +372,8 @@ class RestClient:
         :param new_relation: relation resource to create
         :return: created relation resource
         """
-        return self._create_object_by_representation(self._get_repository(), REL_RELATIONS, new_relation).resource()
+        return self._create_object_by_representation(self.get_current_repository(), REL_RELATIONS,
+                                                     new_relation).resource()
 
     def add_user_to_group(self, group, user_to_add):
         """
@@ -472,7 +484,7 @@ class RestClient:
         else:
             params = {'dql': dql}
 
-        return self._link_get(self._get_repository().find_link(REL_DQL), params=params).resource()
+        return self._link_get(self.get_current_repository().find_link(REL_DQL), params=params).resource()
 
     def simple_search(self, q, params=None):
         """
@@ -486,7 +498,7 @@ class RestClient:
         else:
             params = {'q': q}
 
-        return self._link_get(self._get_repository().find_link(REL_SEARCH), params=params).resource()
+        return self._link_get(self.get_current_repository().find_link(REL_SEARCH), params=params).resource()
 
     def aql_search(self, aql, params=None):
         """
@@ -495,7 +507,7 @@ class RestClient:
         :param params: URL parameters
         :return: query results
         """
-        return self._link_post(self._get_repository().find_link(REL_SEARCH), data=aql, params=params).resource()
+        return self._link_post(self.get_current_repository().find_link(REL_SEARCH), data=aql, params=params).resource()
 
     def materialize(self, lightweight_obj):
         """
@@ -653,7 +665,7 @@ class RestClient:
         """
         return self._follow_resource_link(parent, rel, params)
 
-    def _get_repository(self):
+    def get_current_repository(self):
         """
         Get repository resource specifc to the REST client
         :return: repository resource

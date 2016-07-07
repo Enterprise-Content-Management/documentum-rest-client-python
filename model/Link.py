@@ -53,6 +53,8 @@ REL_LIGHTWEIGHT_OBJECTS = Relation('http://identifiers.emc.com/linkrel/lightweig
 REL_SHARED_PARENT = Relation('http://identifiers.emc.com/linkrel/shared-parent', False)
 REL_ASPECT_TYPES = Relation('http://identifiers.emc.com/linkrel/aspect-types', False)
 REL_OBJECT_ASPECTS = Relation('http://identifiers.emc.com/linkrel/object-aspects', False)
+REL_BATCH_CAPABILITIES = Relation('http://identifiers.emc.com/linkrel/batch-capabilities', False)
+REL_BATCHES = Relation('http://identifiers.emc.com/linkrel/batches', False)
 
 
 class Link(object):

@@ -2,8 +2,11 @@ from configparser import ConfigParser
 from builtins import input
 
 import sys
+import time
 
 from network import RestClient
+from network.RestClient import MEDIA_TYPE_DM_JSON
+
 from util import ResourceUtility
 from model.Link import *
 import logging
@@ -65,9 +68,10 @@ class RestDemo:
             [VERSION_73, 'REST value assistance', self.demo_value_assistance],
             [VERSION_73, 'REST lightweight object', self.demo_lightweight_object],
             [VERSION_73, 'REST aspect', self.demo_aspect],
+            [VERSION_72, 'REST batch', self.demo_batch]
         ]
 
-        if product_info.get('properties').get('major') == VERSION_73:
+        if product_info.get('properties').get('major') == VERSION_72:
             print('This is Documentum REST 7.3')
             self._populate_demo_items(all_items, VERSION_72, VERSION_73)
         elif product_info.get('properties').get('major') == VERSION_72:
@@ -152,29 +156,29 @@ class RestDemo:
         logger.info('Create user %s in repository %s' % (DEMO_NEW_USER, self.REST_REPOSITORY))
         new_user = self.client.create_user(ResourceUtility.generate_user(user_name=DEMO_NEW_USER,
                                                                          user_login_name=DEMO_NEW_USER))
-        self.print_properties(new_user, 'user_name', 'r_object_id')
+        self.print_resource_properties(new_user, 'user_name', 'r_object_id')
 
         logger.info('Update user %s in repository %s' % (DEMO_NEW_USER, self.REST_REPOSITORY))
         new_user = self.client.update(new_user, ResourceUtility.generate_user(user_login_name=DEMO_UPDATE_USER))
-        self.print_properties(new_user, 'user_name', 'r_object_id')
+        self.print_resource_properties(new_user, 'user_name', 'r_object_id')
 
         logger.info('Refresh user %s in repository %s' % (DEMO_NEW_USER, self.REST_REPOSITORY))
         self.client.refresh(new_user)
-        self.print_properties(new_user, 'user_name', 'r_object_id')
+        self.print_resource_properties(new_user, 'user_name', 'r_object_id')
 
         logger.info('Get user %s in repository %s' % (DEMO_NEW_USER, self.REST_REPOSITORY))
         new_user = self.client.get_user(DEMO_NEW_USER)
-        self.print_properties(new_user, 'user_name', 'r_object_id')
+        self.print_resource_properties(new_user, 'user_name', 'r_object_id')
 
         logger.info("\n+++++++++++++++++++++++++++++++Group and Group Member CRUD Start+++++++++++++++++++++++++++++++")
 
         logger.info('Create group %s in repository %s' % (DEMO_NEW_GROUP, self.REST_REPOSITORY))
         new_group = self.client.create_group(ResourceUtility.generate_group(group_name=DEMO_NEW_GROUP))
-        self.print_properties(new_group, 'group_name', 'r_object_id')
+        self.print_resource_properties(new_group, 'group_name', 'r_object_id')
 
         logger.info('Update group %s in repository %s' % (DEMO_NEW_GROUP, self.REST_REPOSITORY))
         new_group = self.client.update(new_group, ResourceUtility.generate_group(group_display_name=DEMO_UPDATE_USER))
-        self.print_properties(new_group, 'group_name', 'r_object_id')
+        self.print_resource_properties(new_group, 'group_name', 'r_object_id')
 
         logger.info('Add user %s in the group %s\n' % (DEMO_NEW_USER, DEMO_NEW_GROUP))
         self.client.add_user_to_group(new_group, new_user)
@@ -209,15 +213,15 @@ class RestDemo:
 
         logger.info('Create new folder %s in cabinet %s...' % (DEMO_NEW_FOLDER, DEMO_CABINET))
         new_folder = self.client.create_folder(cabinet, ResourceUtility.generate_folder(object_name=DEMO_NEW_FOLDER))
-        self.print_properties(new_folder, 'object_name', 'r_object_id')
+        self.print_resource_properties(new_folder, 'object_name', 'r_object_id')
 
         logger.info('Update folder %s in cabinet %s...' % (DEMO_NEW_FOLDER, DEMO_CABINET))
         new_folder = self.client.update(new_folder, ResourceUtility.generate_folder(object_name=DEMO_UPDATE_FOLDER))
-        self.print_properties(new_folder, 'object_name', 'r_object_id')
+        self.print_resource_properties(new_folder, 'object_name', 'r_object_id')
 
         logger.info('Get folder %s in cabinet %s...' % (DEMO_UPDATE_FOLDER, DEMO_CABINET))
         new_folder = self.client.get_folder(cabinet, DEMO_UPDATE_FOLDER)
-        self.print_properties(new_folder, 'object_name', 'r_object_id')
+        self.print_resource_properties(new_folder, 'object_name', 'r_object_id')
 
         logger.info('Delete folder %s' % DEMO_UPDATE_FOLDER)
         self.client.delete(new_folder)
@@ -232,25 +236,25 @@ class RestDemo:
 
         logger.info('Create temp folder %s in cabinet %s...' % (DEMO_TEMP_FOLDER, DEMO_CABINET))
         temp_folder = self.client.create_folder(cabinet, ResourceUtility.generate_folder(object_name=DEMO_TEMP_FOLDER))
-        self.print_properties(temp_folder, 'object_name', 'r_object_id')
+        self.print_resource_properties(temp_folder, 'object_name', 'r_object_id')
 
         logger.info('Create new sysobject %s in folder %s...' % (DEMO_NEW_SYSOBJECT, DEMO_TEMP_FOLDER))
         new_sysobj = self.client.create_sysobj(temp_folder,
                                                ResourceUtility.generate_sysobject(object_name=DEMO_NEW_SYSOBJECT))
-        self.print_properties(new_sysobj, 'object_name', 'r_object_id')
+        self.print_resource_properties(new_sysobj, 'object_name', 'r_object_id')
 
         logger.info('Update sysobject %s in folder %s...' % (DEMO_UPDATE_SYSOBJECT, DEMO_TEMP_FOLDER))
         new_sysobj = self.client.update(new_sysobj,
                                         ResourceUtility.generate_sysobject(object_name=DEMO_UPDATE_SYSOBJECT))
-        self.print_properties(new_sysobj, 'object_name', 'r_object_id')
+        self.print_resource_properties(new_sysobj, 'object_name', 'r_object_id')
 
         logger.info('Refresh sysobject %s in folder %s...' % (DEMO_UPDATE_SYSOBJECT, DEMO_TEMP_FOLDER))
         new_sysobj = self.client.refresh(new_sysobj)
-        self.print_properties(new_sysobj, 'object_name', 'r_object_id')
+        self.print_resource_properties(new_sysobj, 'object_name', 'r_object_id')
 
         logger.info('Get sysobject %s in folder %s...' % (DEMO_UPDATE_SYSOBJECT, DEMO_TEMP_FOLDER))
         new_sysobj = self.client.get_sysobject(temp_folder, DEMO_UPDATE_SYSOBJECT)
-        self.print_properties(new_sysobj, 'object_name', 'r_object_id')
+        self.print_resource_properties(new_sysobj, 'object_name', 'r_object_id')
 
         logger.info('Delete sysobject %s' % DEMO_UPDATE_SYSOBJECT)
         self.client.delete(new_sysobj)
@@ -273,11 +277,12 @@ class RestDemo:
         new_doc = self.client.create_document(temp_folder,
                                               ResourceUtility.generate_document(object_name=DEMO_NEW_DOCUMENT),
                                               'It\'s created by python client', params={'format': 'crtext'})
-        self.print_properties(new_doc, 'object_name', 'r_object_id')
+        self.print_resource_properties(new_doc, 'object_name', 'r_object_id')
 
         logger.info('Get primary content of %s...' % DEMO_NEW_DOCUMENT)
         primary_content = self.client.get_primary_content(new_doc, params={'media-url-policy': 'all'})
-        self.print_properties(primary_content, 'object_name', 'r_object_id', 'format_name', 'full_content_size')
+        self.print_resource_properties(primary_content, 'object_name', 'r_object_id', 'format_name',
+                                       'full_content_size')
 
         logger.info('All media URLs for primary content of %s...' % DEMO_NEW_DOCUMENT)
         for link in primary_content.all_links():
@@ -286,7 +291,7 @@ class RestDemo:
         logger.info('Create new html rendition for document %s...' % DEMO_NEW_DOCUMENT)
         new_content = self.client.create_content(new_doc, content='This is html rendition.', content_type='text/html',
                                                  params={'primary': 'false'})
-        self.print_properties(new_content, 'object_name', 'r_object_id', 'format_name', 'full_content_size')
+        self.print_resource_properties(new_content, 'object_name', 'r_object_id', 'format_name', 'full_content_size')
 
         logger.info('Create new rendition with large file for document %s...' % DEMO_NEW_DOCUMENT)
         path = input('Input the file path. Press \'Enter\' directly to skip uploading file:\n')
@@ -296,7 +301,8 @@ class RestDemo:
                     new_content = self.client.create_content(new_doc, content=f,
                                                              content_type=RestClient.MEDIA_TYPE_OCTET_STREAM,
                                                              params={'primary': 'false'})
-                    self.print_properties(new_content, 'object_name', 'r_object_id', 'format_name', 'full_content_size')
+                    self.print_resource_properties(new_content, 'object_name', 'r_object_id', 'format_name',
+                                                   'full_content_size')
             except IOError:
                 logger.info('The file %s does not exist or can not be opened.' % path)
         else:
@@ -328,46 +334,46 @@ class RestDemo:
 
         logger.info('Create new document %s with content...' % DEMO_NEW_DOCUMENT)
         doc = self.client.create_document(temp_folder, ResourceUtility.generate_document(object_name=DEMO_NEW_DOCUMENT))
-        self.print_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
+        self.print_resource_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
 
         logger.info('Check out document...')
         doc = self.client.check_out(doc)
-        self.print_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
+        self.print_resource_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
 
         logger.info('Cancel check out')
         self.client.cancel_check_out(doc)
 
         logger.info('Refresh document...')
         doc = self.client.refresh(doc)
-        self.print_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
+        self.print_resource_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
 
         logger.info('Check out document...')
         doc = self.client.check_out(doc)
-        self.print_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
+        self.print_resource_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
 
         logger.info('Check in minor with new name...')
         doc = self.client.check_in_minor(doc,
                                          ResourceUtility.generate_document(object_name=DEMO_CHECK_IN_WITHOUT_CONTENT))
-        self.print_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
+        self.print_resource_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
 
         logger.info('Check out document...')
         doc = self.client.check_out(doc)
-        self.print_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
+        self.print_resource_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
 
         logger.info('Check in minor with content')
         doc = self.client.check_in_minor(doc, new_obj=None, content='I am new content.')
-        self.print_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
+        self.print_resource_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
 
         logger.info('Check out document...')
         doc = self.client.check_out(doc)
-        self.print_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
+        self.print_resource_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
 
         logger.info('Check in major with new name and content')
         doc = self.client.check_in_major(doc,
                                          new_obj=ResourceUtility.generate_document(
                                              object_name=DEMO_CHECK_IN_WITH_CONTENT),
                                          content='I am new content again.')
-        self.print_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
+        self.print_resource_properties(doc, 'object_name', 'r_object_id', 'r_version_label')
 
         logger.info('Delete document %s' % DEMO_NEW_DOCUMENT)
         self.client.delete(doc, {'del-version': 'all'})
@@ -376,6 +382,56 @@ class RestDemo:
         self.client.delete(temp_folder)
 
         logger.info("+++++++++++++++++++++++++++++++Version Management End+++++++++++++++++++++++++++++++")
+
+    def demo_batch(self):
+        logger.info("\n+++++++++++++++++++++++++++++++Batch Start+++++++++++++++++++++++++++++++")
+
+        batch_caps = self.client.get_batch_capabilities()
+
+        logger.info("\nBatchable resource:")
+        for batchable in batch_caps.get('batchable-resources'):
+            logger.info("  " + batchable)
+
+        logger.info("\nNon-batchable resource:")
+        for non_batchable in batch_caps.get('non-batchable-resources'):
+            logger.info("  " + non_batchable)
+
+        logger.info("\nsequence: " + batch_caps.get("sequence"))
+        logger.info("\ntransactions: " + batch_caps.get("transactions"))
+
+        cabinets_uri = self.client.get_cabinets().find_link(REL_SELF).href()
+        operation_1 = ResourceUtility.generate_batch_operation('id1', 'get cabinets', cabinets_uri, 'GET',
+                                                               Accept=MEDIA_TYPE_DM_JSON)
+
+        users_uri = self.client.get_users(self.client.get_current_repository()).find_link(REL_SELF).href()
+        operation_2 = ResourceUtility.generate_batch_operation('id2', 'get users', users_uri, 'GET',
+                                                               Accept=MEDIA_TYPE_DM_JSON)
+
+        cabinet_uri = self.client.get_cabinet(DEMO_CABINET).find_link(REL_SELF).href()
+        operation_3 = ResourceUtility.generate_batch_operation('id3', 'get cabinet', cabinet_uri, 'GET',
+                                                               Accept=MEDIA_TYPE_DM_JSON)
+
+        cabinet_folders_uri = self.client.get_cabinet(DEMO_CABINET).find_link(REL_FOLDERS).href()
+        operation_4 = ResourceUtility.generate_batch_operation('id4', 'create folder in cabinet', cabinet_folders_uri,
+                                                               'POST',
+                                                               entity=ResourceUtility.generate_folder(
+                                                                   object_name='folder for batch').representation(),
+                                                               Accept=MEDIA_TYPE_DM_JSON)
+
+        batch = ResourceUtility.generate_batch_request(operation_1, operation_2, operation_3, operation_4)
+        logger.info("\nCreate batch:\n")
+        for operation in batch.get('operations'):
+            logger.info("------------------")
+            print_properties(operation, 'id', 'description')
+            print_properties(operation.get('request'), 'method', 'uri')
+
+        batch_results = self.client.create_batch(batch)
+        logger.info("\nThe batch results:\n")
+        for result in batch_results.get('operations'):
+            logger.info("------------------")
+            print_properties(result, 'id', 'description', 'state')
+
+        logger.info("\n+++++++++++++++++++++++++++++++Batch End+++++++++++++++++++++++++++++++")
 
     def demo_dql(self):
         logger.info("\n+++++++++++++++++++++++++++++++DQL Start+++++++++++++++++++++++++++++++")
@@ -538,12 +594,12 @@ class RestDemo:
         logger.info('Create new sysobject as relation parent...')
         parent = self.client.create_sysobj(cabinet,
                                            ResourceUtility.generate_sysobject(object_name='relation-parent'))
-        self.print_properties(parent, 'object_name', 'r_object_id')
+        self.print_resource_properties(parent, 'object_name', 'r_object_id')
 
         logger.info('Create new sysobject as relation child...')
         child = self.client.create_sysobj(cabinet,
                                           ResourceUtility.generate_sysobject(object_name='relation-child'))
-        self.print_properties(child, 'object_name', 'r_object_id')
+        self.print_resource_properties(child, 'object_name', 'r_object_id')
 
         logger.info('Create new relation...')
         new_relation = self.client.create_relation(ResourceUtility.generate_relation(relation_name='peer',
@@ -554,7 +610,7 @@ class RestDemo:
                                                                                          'properties').get(
                                                                                          'r_object_id'),
                                                                                      ))
-        self.print_properties(new_relation, 'object_name', 'r_object_id')
+        self.print_resource_properties(new_relation, 'object_name', 'r_object_id')
 
         logger.info('Delete the new relation...')
         self.client.delete(new_relation)
@@ -770,11 +826,8 @@ class RestDemo:
         logger.info("+++++++++++++++++++++++++++++++Reset Environment End+++++++++++++++++++++++++++++++")
 
     @staticmethod
-    def print_properties(res, *properties):
-        info = []
-        for prop in properties:
-            info.append('%s: %s' % (prop, res.get('properties').get(prop)))
-        logger.info('>%s\n', ", ".join(info))
+    def print_resource_properties(res, *properties):
+        print_properties(res.get('properties'), *properties)
 
     def demo_all(self):
         self.demo_folder_crud()
@@ -791,6 +844,7 @@ class RestDemo:
 
         self.prepare_env()
         self.choices[choice][2]()
+        time.sleep(1)
         self.demo()
         self.reset_environment()
 
@@ -806,6 +860,13 @@ class RestDemo:
             else:
                 choice = -1
         return choice
+
+
+def print_properties(prop_collection, *properties):
+    info = []
+    for prop in properties:
+        info.append('%s: %s' % (prop, prop_collection.get(prop)))
+    logger.info('>%s\n', ", ".join(info))
 
 
 def main():

@@ -1,3 +1,4 @@
+
 Documentum REST Python Client Samples
 =========
 
@@ -11,18 +12,19 @@ This is a simple Python client for *Documentum REST Services*.
 It will do the following jobs for your reference.  
 
 ```
-0. Reset demo environment
-1. REST all demos
+0. Quit the demoo
+1. Reset demo environment
 2. REST sysObject CRUD
 3. REST content management
 4. REST version management
 5. REST DQL
-6. REST search with URL parameters 
-7. REST formats 
-8. REST network locations 
-9. REST relation CRUD 
+6. REST search with URL parameters
+7. REST formats
+8. REST network locations
+9. REST relation CRUD
 10. REST folder CRUD
 11. REST type
+12. REST batch
 ```
 
 
@@ -30,41 +32,36 @@ It will do the following jobs for your reference.
 ##Requirements
 1. Python 2.7 - 3.5.
 2. Library [request](http://docs.python-requests.org/en/latest/) is installed.
-3. *Documentum REST Services 7.2* is deployed.
+3. Package configparser and future are installed.
+4. *Documentum REST Services 7.2* is deployed.
 
 
 ##Instruction
-The instruction is for Windows. For other operating system, only steps 1-4 are different. Please refer to https://docs.python.org/2/using/ for the installation of Python on different OS.
+The instruction helps to prepare environment and run the demo.
+As there would be different configuration for kinds of operating systems and Python versions, view the references via links provided.
 
-1. Download and install [Python 2.7.x](https://www.python.org/downloads/)
-2. Add `python` to the environment variable PATH. Open a new console and run the command.
+1. Download and install [Python](https://www.python.org/downloads/)
 
-        setx PATH "%PATH%;C:\Python27"
+2. Setup the environment according to the OS type: [Python 2.7.x](https://docs.python.org/2/using/) and [Python 3.5.x](https://docs.python.org/3.5/using/)
 
-3. Add *pip* to the environment variable PATH. Open a console and run the command. 
+3. [Install pip](https://pip.pypa.io/en/stable/installing/).
 
-        setx PATH "%PATH%;C:\Python27\Scripts"
-> __Tip:__ How to install/upgrade pip https://pip.pypa.io/en/stable/installing/
-4. To verify the environment variable PATH is modified successfully, Open a new console and the command as below to check if the path is appended.
+4. Run command to install library [requests](http://docs.python-requests.org/en/latest/) and other dependencies.
 
-        echo %PATH%       
+   ```
+   pip install requests
 
-5. Run command to install library [requests](http://docs.python-requests.org/en/latest/) and other dependencies
+   pip install configparser
 
-        pip install requests
-        pip install configparser
-        pip install future
+   pip install future	
+   ```
 
-6. Navigate to the project home directory.
+5. Navigate to the project home directory.
 
         cd documentum-rest-client-python
 
-7. Edit `rest.properties` or input the info during running the demo.
+6. Edit `rest.properties` or input the info when running the demo.
 
-8. Run the command to execute the demo
+7. Run the command to execute the demo no matter Python 2 or Python 3 is installed.
 
         python RestDemo.py
-
-9. During the execution, the program will prompt the file path to create new rendition. Input *enter* to skip this step. [^1]
-
-[^1]: If a wrong path is input, the step will be skipped.  

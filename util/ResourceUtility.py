@@ -58,5 +58,27 @@ def generate_assist_value_request(**properties):
     return _generate_resource(properties=properties)
 
 
+def generate_batch_request(*operations):
+    batch_operations = []
+    for operation in operations:
+        batch_operations.append(operation.raw_resource())
+    batch_request = {'operations': batch_operations}
+    return _generate_resource(**batch_request)
+
+
+def generate_batch_operation(batch_id, description, uri, method, entity=None, **headers):
+    operation_headers = []
+    for k, v in headers.items():
+        operation_headers.append({'name': k, 'value': v})
+
+    request = {'uri': uri, 'method': method, 'headers': operation_headers}
+    if entity is not None:
+        request['entity'] = entity
+
+    operation = {'id': batch_id, 'description': description, 'request': request}
+
+    return _generate_resource(**operation)
+
+
 def _generate_resource(**raw_resource):
     return Resource(raw_resource)
