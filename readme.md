@@ -65,3 +65,6 @@ As there would be different configuration for kinds of operating systems and Pyt
 7. Run the command to execute the demo no matter Python 2 or Python 3 is installed.
 
         python RestDemo.py
+
+##Demo
+<img src="demo/python-demo.gif" width="600">
