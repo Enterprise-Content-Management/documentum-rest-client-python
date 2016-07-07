@@ -67,4 +67,4 @@ As there would be different configuration for kinds of operating systems and Pyt
         python RestDemo.py
 
 ##Demo
-<img src="demo/python-demo.gif" width="600">
+<img src="demo/python-demo.gif" width="1000">
