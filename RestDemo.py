@@ -71,14 +71,15 @@ class RestDemo:
             [VERSION_72, 'REST batch', self.demo_batch]
         ]
 
-        if product_info.get('properties').get('major') == VERSION_72:
+        version = product_info.get('properties').get('major')
+        if version == VERSION_73:
             print('This is Documentum REST 7.3')
             self._populate_demo_items(all_items, VERSION_72, VERSION_73)
-        elif product_info.get('properties').get('major') == VERSION_72:
+        elif version == VERSION_72:
             print('This is Documentum REST 7.2')
             self._populate_demo_items(all_items, VERSION_72)
         else:
-            logger.info('Unrecognized product version. Quit demo.')
+            logger.info('Unrecognized product version:' + version + '. Quit demo.')
             sys.exit(0)
 
     def _populate_demo_items(self, all_items, *versions):
