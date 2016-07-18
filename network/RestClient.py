@@ -28,7 +28,7 @@ class RestClient:
         self._pwd = pwd
         self._root_uri = rest_uri
         self._repo = repo
-        self._repo_resource = self.get_repository(self._repo)
+        self._repo_resource = self.get_current_repository()
 
     def get_home_resource(self):
         """
@@ -663,14 +663,26 @@ class RestClient:
         :param params: URL parameters
         :return: system objects
         """
-        return self._follow_resource_link(parent, rel, params)
+        if parent:
+            return self._follow_resource_link(parent, rel, params)
+        else:
+            raise Exception(
+                "Parent resource does not and it can not fetch collection by link relation %s." % rel.rel())
 
     def get_current_repository(self):
         """
-        Get repository resource specifc to the REST client
+        Get repository resource specific to the REST client
         :return: repository resource
         """
-        return self._repo_resource
+        if not hasattr(self, "_repo_resource") or not self._repo_resource:
+            repo = self.get_repository(self._repo)
+            if not repo:
+                raise Exception(
+                    "The specified repository %s does not exist. Input an existing repository to run the demo."
+                    % self._repo)
+            return repo
+        else:
+            return self._repo_resource
 
     def _get_object(self, parent, rel, attr_name=None, attr_value=None):
         """

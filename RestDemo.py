@@ -1,16 +1,14 @@
-from configparser import ConfigParser
-from builtins import input
-
-import sys
-import time
-
-from network import RestClient
-from network.RestClient import MEDIA_TYPE_DM_JSON
-
-from util import ResourceUtility
-from model.Link import *
 import logging
 import logging.config
+import sys
+import time
+from builtins import input
+from configparser import ConfigParser
+
+from model.Link import *
+from network import RestClient
+from network.RestClient import MEDIA_TYPE_DM_JSON
+from util import ResourceUtility
 
 __author__ = 'wangc31'
 
@@ -872,7 +870,13 @@ def print_properties(prop_collection, *properties):
 
 def main():
     rest_demo = RestDemo()
-    rest_demo.demo()
+    try:
+        rest_demo.demo()
+    except Exception as e:
+        logger.exception(e)
+        time.sleep(1)
+        print("\n#Error is detected during demo. Please refer the log for the exception detail.#\n")
+        rest_demo.demo()
 
 
 if __name__ == '__main__':
