@@ -59,9 +59,7 @@ def generate_assist_value_request(**properties):
 
 
 def generate_batch_request(*operations):
-    batch_operations = []
-    for operation in operations:
-        batch_operations.append(operation.raw_resource())
+    batch_operations = [operation.raw_resource() for operation in operations]
     batch_request = {'operations': batch_operations}
     return _generate_resource(**batch_request)
 

@@ -94,5 +94,9 @@ class Link(object):
     def is_template(self):
         return self._is_template_
 
+    def __repr__(self):
+        return 'Link(%r, %r, %r, %r)' % (self._rel_, self._href_, self._is_template_, self._title_)
+
     def __str__(self):
-        return 'rel: ' + self._rel_ + '\n' + 'href: ' + self._href_ + '\n'
+        return 'rel: ' + self._rel_ + '\n' + 'href: ' + self._href_ + '\n' \
+               + self._is_template_ + '\n' + self._title_ + '\n'

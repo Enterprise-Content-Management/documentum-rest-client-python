@@ -162,6 +162,12 @@ class Resource(object):
         else:
             return False
 
+    def __repr__(self):
+        return 'Resource(%r)' % self._raw_resource_
+
+    def __str__(self):
+        return self.representation()
+
 
 class Home(Resource):
     """
@@ -207,3 +213,10 @@ class Home(Resource):
         for key in self.get('resources'):
             if key == rel.rel():
                 return self.get('resources').get(key).get('hints').get('representations')
+
+    def __repr__(self):
+        return 'Home(%r)' % self._raw_resource_
+
+    def __str__(self):
+        return super(Home, self).__str__()
+
