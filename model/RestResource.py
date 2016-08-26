@@ -1,10 +1,12 @@
 import json
-import model.Link
+import model
 
 __author__ = 'wangc31'
 
 
 class Resource(object):
+    """This class represents REST resource model"""
+
     def __init__(self, raw_resource):
         """
         This is the model for REST resources. Actually it stores the data of resource in a dictionary.
@@ -20,12 +22,10 @@ class Resource(object):
         Initialize the links of a resource
         :return:
         """
-        if not self.is_key_existing('links'):
-            return
-
-        for link in self.get('links'):
-            if self._is_valid_link(link):
-                self._rest_links_.append(self._generate_link(link))
+        if self.is_key_existing('links'):
+            self._rest_links_ += [self._generate_link(link)
+                                  for link in self.get('links')
+                                  if self._is_valid_link(link)]
 
     def keys(self):
         """
@@ -58,16 +58,16 @@ class Resource(object):
         """
         return self._rest_links_
 
-    def find_link(self, rel, title=None):
+    def find_link(self, link_rel, title=None):
         """
         Get the link according to link relation and title
-        :param rel: link relation
+        :param link_rel: link relation
         :param title: link title
         :return: matched link
         """
         for link in self._rest_links_:
-            if link.rel() == rel.rel() and link.is_template() == rel.is_template() and (
-                            title is None or title == link.title()):
+            if link.rel == link_rel.rel and link.hreftemplate == link_rel.hreftemplate and (
+                            title is None or title == link.title):
                 return link
 
         return None
@@ -96,11 +96,8 @@ class Resource(object):
         if not self.is_key_existing('entries'):
             return []
 
-        entries = []
-        for raw_entry in self.get('entries'):
-            entries.append(Resource(raw_entry))
-
-        return entries
+        return [Resource(raw_entry)
+                for raw_entry in self.get('entries')]
 
     def is_key_existing(self, key):
         """
@@ -132,7 +129,7 @@ class Resource(object):
         :param indent: indent of JSON representation
         :return: reference in JSON
         """
-        reference = {'href': self.find_link(model.Link.REL_SELF).href()}
+        reference = {'href': self.find_link(model.RestLink.REL_SELF).href}
         return json.dumps(reference, indent=indent)
 
     @staticmethod
@@ -143,10 +140,10 @@ class Resource(object):
         :return: instance of model.Link
         """
         if 'href' in link_dict:
-            return model.Link.Link(link_dict['rel'], link_dict['href'], False,
-                                   link_dict['title'] if 'title' in link_dict else None)
+            return model.RestLink.Link(link_dict['rel'], link_dict['href'], False,
+                                       link_dict['title'] if 'title' in link_dict else None)
         elif 'hreftemplate' in link_dict:
-            return model.Link.Link(link_dict['rel'], link_dict['hreftemplate'], True)
+            return model.RestLink.Link(link_dict['rel'], link_dict['hreftemplate'], True)
 
         return None
 
@@ -179,20 +176,20 @@ class Home(Resource):
         Initialize the home resource
         :param resource: data in response of the entry url
         """
-        super(Home, self).__init__(resource.raw_resource())
+        Resource.__init__(self, resource.raw_resource())
 
-    def get_home_entry_link(self, rel):
+    def get_home_entry_link(self, link_rel):
         """
         Get link from home resource according to link relation
-        :param rel: link relation
+        :param link_rel: link relation
         :return: matched link
         """
         for key in self.get('resources'):
-            if key == rel.rel():
-                return model.Link.Link(key, self.get('resources').get(key).get('href'))
+            if key == link_rel.rel:
+                return model.RestLink.Link(key, self.get('resources').get(key).get('href'))
 
     def get_product_info_link(self):
-        return self.get_home_entry_link(model.Link.REL_ABOUT)
+        return self.get_home_entry_link(model.RestLink.REL_ABOUT)
 
     def get_home_entry_methods(self, rel):
         """
@@ -201,7 +198,7 @@ class Home(Resource):
         :return: array of support HTTP methods
         """
         for key in self.get('resources'):
-            if key == rel.rel():
+            if key == rel.link_rel:
                 return self.get('resources').get(key).get('hints').get('allow')
 
     def get_home_entry_media_types(self, rel):
@@ -211,7 +208,7 @@ class Home(Resource):
         :return: array supported media types
         """
         for key in self.get('resources'):
-            if key == rel.rel():
+            if key == rel.link_rel:
                 return self.get('resources').get(key).get('hints').get('representations')
 
     def __repr__(self):
@@ -219,4 +216,3 @@ class Home(Resource):
 
     def __str__(self):
         return super(Home, self).__str__()
-

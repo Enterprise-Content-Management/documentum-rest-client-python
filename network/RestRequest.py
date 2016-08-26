@@ -1,4 +1,4 @@
-from model import Resource
+from model import RestResource
 import requests
 import base64
 import logging
@@ -18,6 +18,8 @@ HTTP_HEADER_CONTENT_TYPE = 'content-type'
 
 
 class RestRequest:
+    """The class is the request to Documentum REST services"""
+
     def __init__(self, href):
         """
         Initialize REST request
@@ -209,8 +211,8 @@ class RestResponse:
         Get the resource from HTTP response
         :return:
         """
-        if len(self.response.content) is not 0:
-            resource = Resource.Resource(self.response.json())
+        if len(self.response.content):
+            resource = RestResource.Resource(self.response.json())
             return resource
         else:
             return None

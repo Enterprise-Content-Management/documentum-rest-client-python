@@ -5,7 +5,7 @@ import time
 from builtins import input
 from configparser import ConfigParser
 
-from model.Link import *
+from model import RestLink
 from network import RestClient
 from network.RestClient import MEDIA_TYPE_DM_JSON
 from util import ResourceUtility
@@ -34,6 +34,10 @@ DEMO_OBJECT_TO_ATTACH = 'obj_to_attach'
 VERSION_72 = '7.2'
 VERSION_73 = '7.3'
 
+SUPPORT_SINCE = 'support-since'
+ITEM_NAME = 'item-name'
+ITEM_CALLABLE = 'item-callable'
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,24 +53,30 @@ class RestDemo:
         product_info = self.client.get_product_info()
 
         all_items = [
-            [VERSION_72, 'Quit the demoo', self.quit],
-            [VERSION_72, 'Reset demo environment', self.reset_environment],
-            [VERSION_72, 'REST sysObject CRUD', self.demo_sysobject_crud],
-            [VERSION_72, 'REST content management', self.demo_content_management],
-            [VERSION_72, 'REST version management', self.demo_version_management],
-            [VERSION_72, 'REST DQL', self.demo_dql],
-            [VERSION_73, 'REST user, group and member CRUD', self.demo_user_group_member_crud],
-            [VERSION_72, 'REST search with URL parameters ', self.demo_simple_search],
-            [VERSION_73, 'REST search with AQL ', self.demo_aql_search],
-            [VERSION_72, 'REST formats ', self.demo_format],
-            [VERSION_72, 'REST network locations ', self.demo_network_location],
-            [VERSION_72, 'REST relation CRUD ', self.demo_relation_crud],
-            [VERSION_72, 'REST folder CRUD', self.demo_folder_crud],
-            [VERSION_72, 'REST type', self.demo_type],
-            [VERSION_73, 'REST value assistance', self.demo_value_assistance],
-            [VERSION_73, 'REST lightweight object', self.demo_lightweight_object],
-            [VERSION_73, 'REST aspect', self.demo_aspect],
-            [VERSION_72, 'REST batch', self.demo_batch]
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'Quit the demo', ITEM_CALLABLE: self.quit},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'Reset demo environment', ITEM_CALLABLE: self.reset_environment},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST sysObject CRUD', ITEM_CALLABLE: self.demo_sysobject_crud},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST content management',
+             ITEM_CALLABLE: self.demo_content_management},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST version management',
+             ITEM_CALLABLE: self.demo_version_management},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST DQL', ITEM_CALLABLE: self.demo_dql},
+            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST user, group and member CRUD',
+             ITEM_CALLABLE: self.demo_user_group_member_crud},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST search with URL parameters ',
+             ITEM_CALLABLE: self.demo_simple_search},
+            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST search with AQL ', ITEM_CALLABLE: self.demo_aql_search},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST formats ', ITEM_CALLABLE: self.demo_format},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST network locations ',
+             ITEM_CALLABLE: self.demo_network_location},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST relation CRUD ', ITEM_CALLABLE: self.demo_relation_crud},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST folder CRUD', ITEM_CALLABLE: self.demo_folder_crud},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST type', ITEM_CALLABLE: self.demo_type},
+            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST value assistance', ITEM_CALLABLE: self.demo_value_assistance},
+            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST lightweight object',
+             ITEM_CALLABLE: self.demo_lightweight_object},
+            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST aspect', ITEM_CALLABLE: self.demo_aspect},
+            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST batch', ITEM_CALLABLE: self.demo_batch}
         ]
 
         version = product_info.get('properties').get('major')
@@ -81,12 +91,11 @@ class RestDemo:
             sys.exit(0)
 
     def _populate_demo_items(self, all_items, *versions):
-        self.choices = {}
-        index = 0
-        for item in all_items:
-            if item[0] in versions:
-                self.choices[index] = item
-                index += 1
+        items = [item
+                 for item in all_items
+                 if item[SUPPORT_SINCE] in versions]
+        self.choices = {i: item
+                        for i, item in enumerate(items)}
 
     def _init_client(self):
         config_parser = ConfigParser()
@@ -285,7 +294,7 @@ class RestDemo:
 
         logger.info('All media URLs for primary content of %s...' % DEMO_NEW_DOCUMENT)
         for link in primary_content.all_links():
-            logger.info(link)
+            logger.info(str(link) + '\n')
 
         logger.info('Create new html rendition for document %s...' % DEMO_NEW_DOCUMENT)
         new_content = self.client.create_content(new_doc, content='This is html rendition.', content_type='text/html',
@@ -398,19 +407,19 @@ class RestDemo:
         logger.info("\nsequence: " + batch_caps.get("sequence"))
         logger.info("\ntransactions: " + batch_caps.get("transactions"))
 
-        cabinets_uri = self.client.get_cabinets().find_link(REL_SELF).href()
+        cabinets_uri = self.client.get_cabinets().find_link(RestLink.REL_SELF).href
         operation_1 = ResourceUtility.generate_batch_operation('id1', 'get cabinets', cabinets_uri, 'GET',
                                                                Accept=MEDIA_TYPE_DM_JSON)
 
-        users_uri = self.client.get_users(self.client.get_current_repository()).find_link(REL_SELF).href()
+        users_uri = self.client.get_users(self.client.get_current_repository()).find_link(RestLink.REL_SELF).href
         operation_2 = ResourceUtility.generate_batch_operation('id2', 'get users', users_uri, 'GET',
                                                                Accept=MEDIA_TYPE_DM_JSON)
 
-        cabinet_uri = self.client.get_cabinet(DEMO_CABINET).find_link(REL_SELF).href()
+        cabinet_uri = self.client.get_cabinet(DEMO_CABINET).find_link(RestLink.REL_SELF).href
         operation_3 = ResourceUtility.generate_batch_operation('id3', 'get cabinet', cabinet_uri, 'GET',
                                                                Accept=MEDIA_TYPE_DM_JSON)
 
-        cabinet_folders_uri = self.client.get_cabinet(DEMO_CABINET).find_link(REL_FOLDERS).href()
+        cabinet_folders_uri = self.client.get_cabinet(DEMO_CABINET).find_link(RestLink.REL_FOLDERS).href
         operation_4 = ResourceUtility.generate_batch_operation('id4', 'create folder in cabinet', cabinet_folders_uri,
                                                                'POST',
                                                                entity=ResourceUtility.generate_folder(
@@ -627,7 +636,8 @@ class RestDemo:
             title = relation_types.get_entry(0).get('title')
             relation_type = self.client.get_relation_type(title)
             logger.info('The relation type %s is returned; \nits link is %s',
-                        relation_type.get('properties').get('relation_name'), relation_type.find_link(REL_SELF).href())
+                        relation_type.get('properties').get('relation_name'),
+                        relation_type.find_link(RestLink.REL_SELF).href)
 
         logger.info("\n+++++++++++++++++++++++++++++++Relation CRUD End+++++++++++++++++++++++++++++++")
 
@@ -667,7 +677,7 @@ class RestDemo:
             title = locations.get_entry(0).get('title')
             location = self.client.get_network_location(title)
             logger.info('The single network location %s is returned; \nits link is %s',
-                        location.get('properties').get('object_name'), location.find_link(REL_SELF).href())
+                        location.get('properties').get('object_name'), location.find_link(RestLink.REL_SELF).href)
 
         logger.info("\n+++++++++++++++++++++++++++++++Network location End+++++++++++++++++++++++++++++++")
 
@@ -703,19 +713,19 @@ class RestDemo:
             lw_obj = self.client.create_sysobj(sharable_obj,
                                                ResourceUtility.generate_sysobject(lightweight_type,
                                                                                   object_name=DEMO_LIGHT_WEITHT_OBJECT),
-                                               REL_LIGHTWEIGHT_OBJECTS)
+                                               RestLink.REL_LIGHTWEIGHT_OBJECTS)
 
             logger.info('Materialize the lightweight object %s...\n' % lw_obj.get('properties').get('object_name'))
             materialized_object = self.client.materialize(lw_obj)
 
-            if materialized_object.find_link(REL_DEMATERIALIZE) is not None:
+            if materialized_object.find_link(RestLink.REL_DEMATERIALIZE) is not None:
                 logger.info('Materializing succeeds...\n')
 
             logger.info('Dematerialize the lightweight object %s...\n' % lw_obj.get('properties').get('object_name'))
             self.client.dematerialize(materialized_object)
 
             lw_obj = self.client.refresh(lw_obj)
-            if lw_obj.find_link(REL_MATERIALIZE) is not None:
+            if lw_obj.find_link(RestLink.REL_MATERIALIZE) is not None:
                 logger.info('Dematerializing succeeds...\n')
 
             logger.info(
@@ -837,28 +847,28 @@ class RestDemo:
         self.demo_user_group_member_crud()
 
     def demo(self):
-        print ("\nInput the number to show the demo.\n")
 
-        choice = self._get_choice()
+        while True:
+            try:
+                for k, v in self.choices.items():
+                    print("%d. %s" % (k, v[ITEM_NAME]))
 
-        self.prepare_env()
-        self.choices[choice][2]()
-        time.sleep(1)
-        self.demo()
-        self.reset_environment()
+                user_choice = int(input("\nWhat's your choice?\n"))
 
-    def _get_choice(self):
-        choice = -1
-        while choice not in self.choices.keys():
-            for k, v in self.choices.items():
-                print("%d. %s" % (k, v[1]))
+                if user_choice not in self.choices:
+                    print('#Invalid choice!#\n')
+                    continue
 
-            user_choice = input("\nWhat's your choice?\n")
-            if user_choice.isdigit():
-                choice = int(user_choice)
-            else:
-                choice = -1
-        return choice
+                self.prepare_env()
+                self.choices[user_choice][ITEM_CALLABLE]()
+                self.reset_environment()
+                time.sleep(1)
+            except ValueError:
+                print("\n#Enter number of the demo items instead of other characters.#\n")
+            except Exception as e:
+                logger.exception(e)
+                time.sleep(1)
+                print("\n#Error is detected during demo. Please refer the log for the exception detail.#\n")
 
 
 def print_properties(prop_collection, *properties):
@@ -869,14 +879,7 @@ def print_properties(prop_collection, *properties):
 
 
 def main():
-    rest_demo = RestDemo()
-    try:
-        rest_demo.demo()
-    except Exception as e:
-        logger.exception(e)
-        time.sleep(1)
-        print("\n#Error is detected during demo. Please refer the log for the exception detail.#\n")
-        rest_demo.demo()
+    RestDemo().demo()
 
 
 if __name__ == '__main__':

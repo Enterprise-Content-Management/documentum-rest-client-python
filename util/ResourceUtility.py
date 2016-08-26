@@ -1,28 +1,19 @@
-from model.Resource import Resource
+from model.RestResource import Resource
 
 __author__ = 'wangc31'
 
 
 def generate_cabinet(**properties):
-    if properties is None:
-        properties = {}
-
     properties['r_object_type'] = 'dm_cabinet'
     return _generate_resource(properties=properties)
 
 
 def generate_folder(**properties):
-    if properties is None:
-        properties = {}
-
     properties['r_object_type'] = 'dm_folder'
     return _generate_resource(properties=properties)
 
 
 def generate_sysobject(subtype=None, **properties):
-    if properties is None:
-        properties = {}
-
     if subtype is None:
         properties['r_object_type'] = 'dm_sysobject'
     else:
@@ -35,9 +26,6 @@ def generate_object_aspects(*aspects):
 
 
 def generate_document(**properties):
-    if properties is None:
-        properties = {}
-
     properties['r_object_type'] = 'dm_document'
     return _generate_resource(properties=properties)
 
@@ -65,9 +53,8 @@ def generate_batch_request(*operations):
 
 
 def generate_batch_operation(batch_id, description, uri, method, entity=None, **headers):
-    operation_headers = []
-    for k, v in headers.items():
-        operation_headers.append({'name': k, 'value': v})
+    operation_headers = [{'name': k, 'value': v}
+                         for k, v in headers.items()]
 
     request = {'uri': uri, 'method': method, 'headers': operation_headers}
     if entity is not None:

@@ -11,7 +11,7 @@
     }
   ],
   "expression-set": {
-    "name": "expression-set",
+    "expression-type": "expression-set",
     "expressions": [
       {
         "expression-type": "fulltext",
