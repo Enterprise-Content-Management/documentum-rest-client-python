@@ -519,6 +519,103 @@ class RestClient:
         return self._link_post(self.get_current_repository().find_link(RestLink.REL_SEARCH), data=aql,
                                params=params).resource()
 
+    def get_saved_searches(self, params=None):
+        """
+        Get saved searches
+        :param params: URL parameters
+        :return: saved searches resource
+        """
+        return self._get_objects(self.get_current_repository(), RestLink.REL_SAVED_SEARCHES, params=params)
+
+    def get_saved_search(self, saved_search_name):
+        """
+        Get saved search resource
+        :param saved_search_name: saved search name
+        :return: saved search resource
+        """
+        return self._get_object(self.get_current_repository(), RestLink.REL_SAVED_SEARCHES, 'title', saved_search_name)
+
+    def create_saved_search(self, new_saved_search):
+        """
+        Create a new saved search
+        :param new_saved_search: the new saved search to create
+        :return: new created saved search
+        """
+        return self._create_object_by_representation(self.get_current_repository(), RestLink.REL_SAVED_SEARCHES,
+                                                     new_saved_search).resource()
+
+    def execute_saved_search(self, saved_search, params=None):
+        """
+        Execute saved search
+        :param saved_search: saved search to execute
+        :param params: URL parameters
+        :return: search results
+        """
+        return self._link_get(saved_search.find_link(RestLink.REL_SEARCH_EXECUTION), params=params).resource()
+
+    def get_saved_results(self, saved_search, params=None):
+        """
+        Get saved results
+        :param saved_search: saved search
+        :param params: URL parameters
+        :return: saved search results
+        """
+        return self._link_get(saved_search.find_link(RestLink.REL_SAVED_SEARCH_RESULTS), params=params).resource()
+
+    def enable_saved_results(self, saved_search):
+        """
+        Enable saved results
+        :param saved_search: saved search
+        :return: saved results of saved search
+        """
+        return self._link_put(saved_search.find_link(RestLink.REL_SAVED_SEARCH_RESULTS)).resource()
+
+    def disable_saved_results(self, saved_search):
+        """
+        Disable saved results
+        :param saved_search: saved search
+        :return:
+        """
+        self._link_delete(saved_search.find_link(RestLink.REL_SAVED_SEARCH_RESULTS))
+
+    def get_search_templates(self, params=None):
+        """
+        Get search templates
+        :param params: URL parameters
+        :return: search templates
+        """
+        return self._get_objects(self.get_current_repository(), RestLink.REL_SEARCH_TEMPLATES, params=params)
+
+    def get_search_template(self, search_template_name):
+        """
+        Get search template resource
+        :param search_template_name: search template name
+        :return: search template resource
+        """
+        return self._get_object(self.get_current_repository(), RestLink.REL_SEARCH_TEMPLATES, 'title',
+                                search_template_name)
+
+    def create_search_template(self, new_search_template):
+        """
+        Create search template
+        :param new_search_template: search template to create
+        :return: created search template
+        """
+        return self._create_object_by_representation(self.get_current_repository(), RestLink.REL_SEARCH_TEMPLATES,
+                                                     new_search_template).resource()
+
+    def execute_search_template(self, search_template, variables=None, params=None):
+        """
+        Execute search template
+        :param variables: variables from input
+        :param search_template: search template to execute
+        :param params: URL parameters
+        :return: search results
+        """
+        print(variables)
+        return self._link_post(search_template.find_link(RestLink.REL_SEARCH_EXECUTION), data=variables,
+                               params=params).resource()
+
     def materialize(self, lightweight_obj):
         """
         Materialize lightweight object

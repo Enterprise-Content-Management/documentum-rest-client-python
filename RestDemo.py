@@ -1,11 +1,16 @@
+import collections
+import inspect
+import json
 import logging
 import logging.config
 import sys
 import time
+
 from builtins import input
 from configparser import ConfigParser
 
 from model import RestLink
+from model.QueryDocument import Sort, ExpSet, FtExp, FacetDefinition
 from network import RestClient
 from network.RestClient import MEDIA_TYPE_DM_JSON
 from util import ResourceUtility
@@ -34,15 +39,15 @@ DEMO_OBJECT_TO_ATTACH = 'obj_to_attach'
 VERSION_72 = '7.2'
 VERSION_73 = '7.3'
 
-SUPPORT_SINCE = 'support-since'
-ITEM_NAME = 'item-name'
-ITEM_CALLABLE = 'item-callable'
-
 logger = logging.getLogger(__name__)
+
+Demo = collections.namedtuple('Demo', ['version', 'description', 'callable'])
 
 
 class RestDemo:
-    def __init__(self):
+    def __init__(self, prompt_func):
+        self.prompt_func = prompt_func
+
         self._init_logger()
 
         self._init_client()
@@ -50,79 +55,72 @@ class RestDemo:
         self._init_demo_items()
 
     def _init_demo_items(self):
-        product_info = self.client.get_product_info()
 
-        all_items = [
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'Quit the demo', ITEM_CALLABLE: self.quit},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'Reset demo environment', ITEM_CALLABLE: self.reset_environment},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST sysObject CRUD', ITEM_CALLABLE: self.demo_sysobject_crud},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST content management',
-             ITEM_CALLABLE: self.demo_content_management},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST version management',
-             ITEM_CALLABLE: self.demo_version_management},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST DQL', ITEM_CALLABLE: self.demo_dql},
-            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST user, group and member CRUD',
-             ITEM_CALLABLE: self.demo_user_group_member_crud},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST search with URL parameters ',
-             ITEM_CALLABLE: self.demo_simple_search},
-            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST search with AQL ', ITEM_CALLABLE: self.demo_aql_search},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST formats ', ITEM_CALLABLE: self.demo_format},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST network locations ',
-             ITEM_CALLABLE: self.demo_network_location},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST relation CRUD ', ITEM_CALLABLE: self.demo_relation_crud},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST folder CRUD', ITEM_CALLABLE: self.demo_folder_crud},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST type', ITEM_CALLABLE: self.demo_type},
-            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST value assistance', ITEM_CALLABLE: self.demo_value_assistance},
-            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST lightweight object',
-             ITEM_CALLABLE: self.demo_lightweight_object},
-            {SUPPORT_SINCE: VERSION_73, ITEM_NAME: 'REST aspect', ITEM_CALLABLE: self.demo_aspect},
-            {SUPPORT_SINCE: VERSION_72, ITEM_NAME: 'REST batch', ITEM_CALLABLE: self.demo_batch}
-        ]
+        try:
+            demos = tuple(
+                Demo(self._get_method_version(method), self._get_method_doc(method), method) for name, method in
+                (inspect.getmembers(self, predicate=inspect.ismethod))
+                if str(name).startswith('demo'))
 
-        version = product_info.get('properties').get('major')
-        if version == VERSION_73:
-            print('This is Documentum REST 7.3')
-            self._populate_demo_items(all_items, VERSION_72, VERSION_73)
-        elif version == VERSION_72:
-            print('This is Documentum REST 7.2')
-            self._populate_demo_items(all_items, VERSION_72)
-        else:
-            logger.info('Unrecognized product version:' + version + '. Quit demo.')
+            product_version = float(self.client.get_product_info().get('properties').get('major'))
+
+            print('This is Documentum REST {}'.format(product_version))
+            self._populate_demo_items(demos, product_version)
+        except Exception as e:
+            logger.info('Error occurs... Quit demo.\n{}'.format(e))
             sys.exit(0)
 
-    def _populate_demo_items(self, all_items, *versions):
-        items = [item
-                 for item in all_items
-                 if item[SUPPORT_SINCE] in versions]
+    @staticmethod
+    def _get_method_version(demo):
+        return inspect.getdoc(demo).split('\n')[1].split(':')[1].strip()
+
+    @staticmethod
+    def _get_method_doc(demo):
+        return inspect.getdoc(demo).split('\n')[0]
+
+    def _populate_demo_items(self, demos, product_version):
+        items = [demo
+                 for demo in demos
+                 if float(demo.version) <= product_version]
+
+        # hardcode quit and reset at the top
+        items.insert(0, Demo(self._get_method_version(self.quit), self._get_method_doc(self.quit), self.quit))
+        items.insert(1, Demo(self._get_method_version(self.reset_environment),
+                             self._get_method_doc(self.reset_environment), self.reset_environment))
+
         self.choices = {i: item
                         for i, item in enumerate(items)}
 
     def _init_client(self):
         config_parser = ConfigParser()
         config_parser.read("resources/rest.properties")
+
         self.REST_URI = config_parser.get("environment", "rest.host")
-        rest_uri = input("Input Documentum REST Entry Path: [default - %s]" % self.REST_URI)
+        rest_uri = self.prompt_func("Input Documentum REST Entry Path: [default - %s]" % self.REST_URI)
         if rest_uri:
             self.REST_URI = rest_uri
+
         self.REST_REPOSITORY = config_parser.get("environment", "rest.repository")
-        rest_repo = input("Input Repository Name: [default - %s]" % self.REST_REPOSITORY)
+        rest_repo = self.prompt_func("Input Repository Name: [default - %s]" % self.REST_REPOSITORY)
         if rest_repo:
             self.REST_REPOSITORY = rest_repo
+
         self.REST_USER = config_parser.get("environment", "rest.username")
-        rest_user = input("Input User Name: [default - %s]" % self.REST_USER)
+        rest_user = self.prompt_func("Input User Name: [default - %s]" % self.REST_USER)
         if rest_user:
             self.REST_USER = rest_user
+
         self.REST_PWD = config_parser.get("environment", "rest.password")
-        rest_pwd = input("Input User Password: [default - %s]" % self.REST_PWD)
+        rest_pwd = self.prompt_func("Input User Password: [default - %s]" % self.REST_PWD)
         if rest_pwd:
             self.REST_PWD = rest_pwd
+
         self.client = RestClient.RestClient(self.REST_USER, self.REST_PWD, self.REST_URI, self.REST_REPOSITORY)
 
-    @staticmethod
-    def _init_logger():
+    def _init_logger(self):
         logging.getLogger("requests").setLevel(logging.WARNING)
 
-        is_debug = input("Enable debugging messages (yes|no)? [default - no]")
+        is_debug = self.prompt_func("Enable debugging messages (yes|no)? [default - no]")
         if is_debug == 'yes':
             level = 'DEBUG'
         else:
@@ -148,17 +146,24 @@ class RestDemo:
 
     @staticmethod
     def quit():
+        """Quit the demo
+        version: 7.2"""
+
         logger.info("\nQuit the demo.")
         sys.exit(0)
 
     def create_demo_cabinet(self):
-        logger.info("\n+++++++++++++++++++++++++++++++Create temp cabinet Start+++++++++++++++++++++++++++++++")
+        logger.debug("\n+++++++++++++++++++++++++++++++Create temp cabinet Start+++++++++++++++++++++++++++++++")
 
         self.client.create_cabinet(ResourceUtility.generate_cabinet(object_name=DEMO_CABINET))
 
-        logger.info("+++++++++++++++++++++++++++++++Create temp cabinet End+++++++++++++++++++++++++++++++")
+        logger.debug("+++++++++++++++++++++++++++++++Create temp cabinet End+++++++++++++++++++++++++++++++")
 
     def demo_user_group_member_crud(self):
+        """
+        REST user, group and member CRUD
+        version:7.3
+        """
         logger.info("\n+++++++++++++++++++++++++++++++User CRUD Start+++++++++++++++++++++++++++++++")
 
         logger.info('Create user %s in repository %s' % (DEMO_NEW_USER, self.REST_REPOSITORY))
@@ -214,6 +219,10 @@ class RestDemo:
         self.client.delete(another_new_group)
 
     def demo_folder_crud(self):
+        """
+        REST folder CRUD
+        version:7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Folder CRUD Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get cabinet %s...' % DEMO_CABINET)
@@ -237,6 +246,10 @@ class RestDemo:
         logger.info("+++++++++++++++++++++++++++++++Folder CRUD End+++++++++++++++++++++++++++++++")
 
     def demo_sysobject_crud(self):
+        """
+        REST sysObject CRUD
+        version: 7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Object CRUD Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get cabinet %s...' % DEMO_CABINET)
@@ -273,6 +286,8 @@ class RestDemo:
         logger.info("+++++++++++++++++++++++++++++++Object CRUD End+++++++++++++++++++++++++++++++")
 
     def demo_content_management(self):
+        """REST content management
+        version: 7.2"""
         logger.info("\n+++++++++++++++++++++++++++++++Content Management Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get cabinet %s...' % DEMO_CABINET)
@@ -302,7 +317,7 @@ class RestDemo:
         self.print_resource_properties(new_content, 'object_name', 'r_object_id', 'format_name', 'full_content_size')
 
         logger.info('Create new rendition with large file for document %s...' % DEMO_NEW_DOCUMENT)
-        path = input('Input the file path. Press \'Enter\' directly to skip uploading file:\n')
+        path = self.prompt_func('Input the file path. Press \'Enter\' directly to skip uploading file:\n')
         if path:
             try:
                 with open(path, 'rb') as f:
@@ -332,6 +347,10 @@ class RestDemo:
         logger.info("+++++++++++++++++++++++++++++++Content Management End+++++++++++++++++++++++++++++++")
 
     def demo_version_management(self):
+        """
+        REST version management
+        version:7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Version Management Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get cabinet %s...' % DEMO_CABINET)
@@ -392,6 +411,10 @@ class RestDemo:
         logger.info("+++++++++++++++++++++++++++++++Version Management End+++++++++++++++++++++++++++++++")
 
     def demo_batch(self):
+        """
+        REST batch
+        version:7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Batch Start+++++++++++++++++++++++++++++++")
 
         batch_caps = self.client.get_batch_capabilities()
@@ -442,6 +465,10 @@ class RestDemo:
         logger.info("\n+++++++++++++++++++++++++++++++Batch End+++++++++++++++++++++++++++++++")
 
     def demo_dql(self):
+        """
+        REST DQL
+        version: 7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++DQL Start+++++++++++++++++++++++++++++++")
 
         logger.info('Query \'select * from dm_user\' with items-per-page=3,page=2...')
@@ -465,6 +492,10 @@ class RestDemo:
         logger.info("+++++++++++++++++++++++++++++++DQL End+++++++++++++++++++++++++++++++")
 
     def demo_simple_search(self):
+        """
+        REST search with URL parameters
+        version:7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Simple Search Start+++++++++++++++++++++++++++++++")
 
         logger.info('Simple search with keyword emc and parameters items-per-page=3,page=2,inline=true...')
@@ -487,13 +518,20 @@ class RestDemo:
         logger.info("+++++++++++++++++++++++++++++++Simple Search End+++++++++++++++++++++++++++++++")
 
     def demo_aql_search(self):
+        """
+        REST search with AQL
+        version:7.3
+        """
         logger.info("\n+++++++++++++++++++++++++++++++AQL Search Start+++++++++++++++++++++++++++++++")
 
+        query_doc = ResourceUtility.generate_query_document(types=['dm_sysobject'], columns=['object_name'],
+                                                            sorts=[Sort('object_name', True, 'en', True)],
+                                                            expression_set=ExpSet('AND', FtExp('emc or rest')))
         logger.info('AQL search for keyword emc and parameters items-per-page=3,page=2,inline=true...')
+
         results = []
         try:
-            with open("resources/aql.json", 'rb') as f:
-                results = self.client.aql_search(f, {'items-per-page': '2', 'page': '1', 'inline': 'true'})
+            results = self.client.aql_search(query_doc.dump(), {'items-per-page': '2', 'page': '1', 'inline': 'true'})
         except IOError:
             logger.info('Fail to search with AQL.')
 
@@ -511,9 +549,178 @@ class RestDemo:
             for result in results.get_entries():
                 logger.info(result.get('content').get('properties').get('object_name'))
 
+        # add facet definitions in search criteria
+        self.step_separator('Facet against attribute {}'.format('r_object_type'))
+        query_doc.facet_definitions = [
+            FacetDefinition(facet_id='facet_r_object_type', attributes=['r_object_type'])]
+
+        try:
+            results = self.client.aql_search(query_doc.dump(), {'items-per-page': '2', 'page': '1', 'inline': 'true'})
+        except IOError:
+            logger.info('Fail to search with AQL.')
+
+        logger.info('Facet results:')
+        for facet in results.get('facets')[0].get('facet-value'):
+            logger.info('group for %s has %s results and the navigation link is %s',
+                        facet.get('facet-value-constraint'), facet.get('facet-value-count'),
+                        facet.get('link').get('href'))
+
         logger.info("\n+++++++++++++++++++++++++++++++AQL Search End+++++++++++++++++++++++++++++++")
 
+    def demo_saved_search(self):
+        """
+        REST Saved Search
+        version: 7.3
+        """
+
+        logger.info("\n+++++++++++++++++++++++++++++++Saved Search Start+++++++++++++++++++++++++++++++")
+
+        self.step_separator('Create a saved search...')
+        query_doc = ResourceUtility.generate_query_document(types=['dm_sysobject'], columns=['object_name'],
+                                                            sorts=[Sort('object_name', True, 'en', True)],
+                                                            expression_set=ExpSet('AND', FtExp('emc or rest')))
+        new_saved_search = ResourceUtility.generate_saved_search('New saved search',
+                                                                 'This is a new saved search for demo', True,
+                                                                 query_doc=query_doc)
+        saved_search = self.client.create_saved_search(new_saved_search)
+        properties = saved_search.get('properties')
+        logger.info('New saved search is created at {}.\n name:{},\n description: {},\n is_public: {}'.format(
+            properties.get('r_creation_date'), properties.get('object_name'), properties.get('title'),
+            properties.get('r_is_public')))
+
+        self.step_separator("Get saved searches...")
+        saved_searches = self.client.get_saved_searches()
+
+        if len(saved_searches.get_entries()) > 0:
+            logger.info('Saved searches: ')
+            for saved_search in saved_searches.get_entries():
+                logger.info(saved_search.get('title'))
+
+        self.step_separator('Get one saved search "{0}"...'.format(saved_searches.get_entry(0).get('title')))
+        saved_search = self.client.get_saved_search(saved_searches.get_entry(0).get('title'))
+        properties = saved_search.get('properties')
+        logger.info(
+            'name: {},\n public: {},\n has results: {}'.format(properties.get('object_name'),
+                                                               properties.get('r_is_public'),
+                                                               properties.get('has_results')))
+        logger.info('saved AQL is:\n {}'.format(json.dumps(json.loads(saved_search.get('query-document')), indent=4)))
+
+        self.step_separator('Update the saved search...')
+        update_saved_search = ResourceUtility.generate_saved_search('New saved search',
+                                                                    'This is a new saved search for demo', False,
+                                                                    query_doc=query_doc)
+        saved_search = self.client.update(saved_search, update_saved_search)
+        properties = saved_search.get('properties')
+        logger.info('New saved search is created at {}.\n name:{},\n description: {},\n is_public: {}'.format(
+            properties.get('r_creation_date'), properties.get('object_name'), properties.get('title'),
+            properties.get('r_is_public')))
+
+        self.step_separator('Execute the saved search...')
+        results = self.client.execute_saved_search(saved_search,
+                                                   {'items-per-page': '2', 'page': '1', 'inline': 'true'})
+        logger.info('Object names in page %d...', 2)
+        for result in results.get_entries():
+            logger.info(result.get('content').get('properties').get('object_name'))
+
+        self.step_separator('Get saved results...')
+        # noinspection PyBroadException
+        try:
+            self.client.get_saved_results(saved_search)
+        except:
+            logger.info('The saved results are disabled by default.')
+
+        self.step_separator('Enable saved results...')
+        results = self.client.enable_saved_results(saved_search)
+        for result in results.get_entries():
+            logger.info(result.get('title'))
+
+        self.step_separator('Get saved results after it is enabled...')
+        results = self.client.get_saved_results(saved_search, {'items-per-page': '2', 'page': '1', 'inline': 'true'})
+        logger.info('Object names in page %d...', 2)
+        for result in results.get_entries():
+            logger.info(result.get('content').get('properties').get('object_name'))
+
+        self.step_separator('Disable saved results...')
+        self.client.disable_saved_results(saved_search)
+
+        self.step_separator('Get saved results again after it is disabled...')
+        # noinspection PyBroadException
+        try:
+            self.client.get_saved_results(saved_search)
+        except:
+            logger.info('The saved results are disabled again - no results')
+
+        self.step_separator('Delete saved search...')
+        self.client.delete(saved_search)
+
+        logger.info("\n+++++++++++++++++++++++++++++++Saved Search End+++++++++++++++++++++++++++++++")
+
+    def demo_search_template(self):
+        """
+        REST Search Template
+        version:7.3
+        """
+        logger.info("\n+++++++++++++++++++++++++++++++Search Template Start+++++++++++++++++++++++++++++++")
+
+        self.step_separator('Create a search template...')
+        query_doc = ResourceUtility.generate_query_document(types=['dm_sysobject'], columns=['object_name'],
+                                                            sorts=[Sort('object_name', True, 'en', True)],
+                                                            expression_set=ExpSet('AND', FtExp('emc or rest',
+                                                                                               is_template=True)))
+        new_search_template = ResourceUtility.generate_search_template('New search template',
+                                                                       'This is a new search template for demo', True,
+                                                                       query_doc=query_doc)
+
+        search_template = self.client.create_search_template(new_search_template)
+        properties = search_template.get('properties')
+        logger.info('New search template is created at {}.\n name:{},\n description: {},\n is_public: {}'.format(
+            properties.get('r_creation_date'), properties.get('object_name'), properties.get('subject'),
+            properties.get('r_is_public')))
+
+        logger.info('Get search templates...')
+        search_templates = self.client.get_search_templates()
+
+        if len(search_templates.get_entries()) > 0:
+            logger.info('Saved searches: ')
+            for search_template in search_templates.get_entries():
+                logger.info(search_template.get('title'))
+
+        self.step_separator('Get one search template "{0}"...'.format(search_templates.get_entry(0).get('title')))
+        search_template = self.client.get_search_template(search_templates.get_entry(0).get('title'))
+        properties = search_template.get('properties')
+        logger.info(
+            'name: {},\n public: {},\n description: {}'.format(properties.get('object_name'),
+                                                               properties.get('r_is_public'),
+                                                               properties.get('subject')))
+        logger.info('\nexternal variables:')
+        for v in search_template.get('external-variables'):
+            logger.info(
+                'id: {},\nvariable type: {},\ndata type: {},\nvalue: {}'.format(v.get('id'), v.get('variable-type'),
+                                                                                v.get('data-type'),
+                                                                                v.get('variable-value')))
+
+        logger.info(
+            'saved AQL is:\n {}'.format(
+                json.dumps(json.loads(search_template.get('query-document-template')), indent=4)))
+
+        self.step_separator('Execute the search template...')
+        input_variables = ResourceUtility.generate_search_template_variables(search_template.get('external-variables'))
+        results = self.client.execute_search_template(search_template, variables=json.dumps(input_variables, indent=4),
+                                                      params={'items-per-page': '2', 'page': '1', 'inline': 'true'})
+        logger.info('Object names in page %d...', 2)
+        for result in results.get_entries():
+            logger.info(result.get('content').get('properties').get('object_name'))
+
+        self.step_separator('Delete the search template...')
+        self.client.delete(search_template)
+
+        logger.info("\n+++++++++++++++++++++++++++++++Search Template End+++++++++++++++++++++++++++++++")
+
     def demo_type(self):
+        """
+        REST type
+        version:7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Type Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get types resource...')
@@ -532,16 +739,20 @@ class RestDemo:
         logger.info("\n+++++++++++++++++++++++++++++++Type End+++++++++++++++++++++++++++++++")
 
     def demo_value_assistance(self):
+        """
+        REST value assistance
+        version:7.3
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Value Assistance Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get the value assistance of the type...')
-        dm_type_str = input(
+        dm_type_str = self.prompt_func(
             'Input the type name with fixed value assistance list. Press \'Enter\' directly to skip.\n')
         if dm_type_str:
             dm_type = self.client.get_type(dm_type_str)
 
             if dm_type:
-                included_property = input(
+                included_property = self.prompt_func(
                     'Input attribute name of %s with fixed value assistance list. Press \'Enter\' directly to skip.\n'
                     % dm_type_str)
 
@@ -561,7 +772,7 @@ class RestDemo:
 
         # E.G. city_type.city depends on city_type.country
         # country China has cities Shanghai, Beijing, Chongqing, Grangzhou, Shenzhen and Tianjing
-        dm_type_str = input(
+        dm_type_str = self.prompt_func(
             '\nInput the type name with value assistance dependencies. Press \'Enter\' directly to skip.\n')
         if dm_type_str:
             dm_type = self.client.get_type(dm_type_str)
@@ -570,9 +781,10 @@ class RestDemo:
                 logger.info('Attribute %s.%s has dependency %s' % (
                     dm_type.get('name'), attr.get('name'), attr.get('dependencies')))
 
-            attr_name = input('Input the attribute name of %s which has dependencies:' % dm_type_str)
-            dependency_attr_name = input('Input the dependency name of %s.%s:\n' % (dm_type_str, attr_name))
-            dependency_attr_value = input('Input the dependency value of attribute %s:\n' % dependency_attr_name)
+            attr_name = self.prompt_func('Input the attribute name of %s which has dependencies:' % dm_type_str)
+            dependency_attr_name = self.prompt_func('Input the dependency name of %s.%s:\n' % (dm_type_str, attr_name))
+            dependency_attr_value = self.prompt_func(
+                'Input the dependency value of attribute %s:\n' % dependency_attr_name)
 
             properties = {dependency_attr_name: dependency_attr_value}
             value_assistance = self.client.get_value_assistance(dm_type,
@@ -589,6 +801,10 @@ class RestDemo:
         logger.info("\n+++++++++++++++++++++++++++++++Value Assistance End+++++++++++++++++++++++++++++++")
 
     def demo_relation_crud(self):
+        """
+        REST relation CRUD
+        version:7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Relation CRUD Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get relations in repository %s...' % self.REST_REPOSITORY)
@@ -642,6 +858,10 @@ class RestDemo:
         logger.info("\n+++++++++++++++++++++++++++++++Relation CRUD End+++++++++++++++++++++++++++++++")
 
     def demo_format(self):
+        """
+        REST formats
+        version: 7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Format CRUD Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get formats in repository %s...' % self.REST_REPOSITORY)
@@ -662,6 +882,10 @@ class RestDemo:
         logger.info("\n+++++++++++++++++++++++++++++++Format CRUD End+++++++++++++++++++++++++++++++")
 
     def demo_network_location(self):
+        """
+        REST network locations
+        version:7.2
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Network location Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get network locations in repository %s...' % self.REST_REPOSITORY)
@@ -682,6 +906,9 @@ class RestDemo:
         logger.info("\n+++++++++++++++++++++++++++++++Network location End+++++++++++++++++++++++++++++++")
 
     def demo_lightweight_object(self):
+        """REST lightweight object
+        version:7.3
+        """
         logger.info(
             "\n+++++++++++++++++++++++++++++++Lightweight object Start+++++++++++++++++++++++++++++++")
 
@@ -697,7 +924,7 @@ class RestDemo:
 
         cabinet = self.client.get_cabinet(DEMO_CABINET)
 
-        sharable_type = input('\nInput the sharable type. Press \'Enter\' directly to skip.\n')
+        sharable_type = self.prompt_func('\nInput the sharable type. Press \'Enter\' directly to skip.\n')
         if not sharable_type:
             logger.info('Skip lightweight object demo.')
         else:
@@ -708,7 +935,7 @@ class RestDemo:
                                                          object_name=DEMO_SHARABLE_OBJECT,
                                                          title='demo_sharable_type'))
 
-            lightweight_type = input('\nInput the lightweight type:\n')
+            lightweight_type = self.prompt_func('\nInput the lightweight type:\n')
             logger.info('Create object %s of lightweight type %s...' % (DEMO_LIGHT_WEITHT_OBJECT, lightweight_type))
             lw_obj = self.client.create_sysobj(sharable_obj,
                                                ResourceUtility.generate_sysobject(lightweight_type,
@@ -753,6 +980,10 @@ class RestDemo:
         logger.info("\n+++++++++++++++++++++++++++++++Lightweight object End+++++++++++++++++++++++++++++++")
 
     def demo_aspect(self):
+        """
+        REST aspect
+        version:7.3
+        """
         logger.info("\n+++++++++++++++++++++++++++++++Aspect Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get all aspects...')
@@ -760,7 +991,7 @@ class RestDemo:
         for entry in aspects.get_entries():
             logger.info('Aspect name: %s', entry.get('title'))
 
-        aspect_type = input('\nInput the aspect type to attach... Press \'Enter\' directly to skip.\n')
+        aspect_type = self.prompt_func('\nInput the aspect type to attach... Press \'Enter\' directly to skip.\n')
 
         if aspect_type:
             cabinet = self.client.get_cabinet(DEMO_CABINET)
@@ -785,48 +1016,54 @@ class RestDemo:
 
         logger.info("\n+++++++++++++++++++++++++++++++Aspect End+++++++++++++++++++++++++++++++")
 
+    @staticmethod
+    def step_separator(message):
+        logger.info('\n' + message)
+
     def clean_demo_cabinet(self):
-        logger.info("\n+++++++++++++++++++++++++++++++Delete demo cabinet Start+++++++++++++++++++++++++++++++")
+        logger.debug("\n+++++++++++++++++++++++++++++++Delete demo cabinet Start+++++++++++++++++++++++++++++++")
         cabinet = self.client.get_cabinet(DEMO_CABINET)
 
         if cabinet is not None:
-            logger.info('Deleting cabinet %s.', DEMO_CABINET)
+            logger.debug('Deleting cabinet %s.', DEMO_CABINET)
             self.client.delete_folder_recursively(cabinet)
         else:
-            logger.info('Cabinet %s does not exist.', DEMO_CABINET)
+            logger.debug('Cabinet %s does not exist.', DEMO_CABINET)
 
-        logger.info("+++++++++++++++++++++++++++++++Delete demo cabinet End+++++++++++++++++++++++++++++++")
+        logger.debug("+++++++++++++++++++++++++++++++Delete demo cabinet End+++++++++++++++++++++++++++++++")
 
     def clean_demo_user_group(self):
-        logger.info("+++++++++++++++++++++++++++++++Delete demo users/groups Start+++++++++++++++++++++++++++++++")
+        logger.debug("+++++++++++++++++++++++++++++++Delete demo users/groups Start+++++++++++++++++++++++++++++++")
 
         user = self.client.get_user(DEMO_NEW_USER)
         if user is not None:
-            logger.info('Delete user %s...' % DEMO_NEW_USER)
+            logger.debug('Delete user %s...' % DEMO_NEW_USER)
             self.client.delete(user)
         else:
-            logger.info('User %s does not exist.', DEMO_NEW_USER)
+            logger.debug('User %s does not exist.', DEMO_NEW_USER)
 
         group = self.client.get_group(DEMO_NEW_GROUP)
         if group is not None:
-            logger.info('Delete group %s...' % DEMO_NEW_GROUP)
+            logger.debug('Delete group %s...' % DEMO_NEW_GROUP)
             self.client.delete(group)
         else:
-            logger.info('Group %s does not exist.', DEMO_NEW_GROUP)
+            logger.debug('Group %s does not exist.', DEMO_NEW_GROUP)
 
         group = self.client.get_group(DEMO_ANOTHER_NEW_GROUP)
         if group is not None:
-            logger.info('Delete group %s...' % DEMO_ANOTHER_NEW_GROUP)
+            logger.debug('Delete group %s...' % DEMO_ANOTHER_NEW_GROUP)
             self.client.delete(group)
         else:
-            logger.info('Group %s does not exist.', DEMO_ANOTHER_NEW_GROUP)
-        logger.info("+++++++++++++++++++++++++++++++Delete demo users/groups End+++++++++++++++++++++++++++++++")
+            logger.debug('Group %s does not exist.', DEMO_ANOTHER_NEW_GROUP)
+        logger.debug("+++++++++++++++++++++++++++++++Delete demo users/groups End+++++++++++++++++++++++++++++++")
 
     def prepare_env(self):
         self.reset_environment()
         self.create_demo_cabinet()
 
     def reset_environment(self):
+        """Reset demo environment
+        version: 7.2"""
         logger.info("\n+++++++++++++++++++++++++++++++Reset Environment Start+++++++++++++++++++++++++++++++")
 
         self.clean_demo_cabinet()
@@ -838,29 +1075,29 @@ class RestDemo:
     def print_resource_properties(res, *properties):
         print_properties(res.get('properties'), *properties)
 
-    def demo_all(self):
-        self.demo_folder_crud()
-        self.demo_sysobject_crud()
-        self.demo_content_management()
-        self.demo_version_management()
-        self.demo_dql()
-        self.demo_user_group_member_crud()
+    def run_all(self):
+        self.prepare_env()
+        [item.callable()
+         for key, item in self.choices.items()
+         if not (item.callable == self.quit or item.callable == self.reset_environment)]
 
-    def demo(self):
+        self.reset_environment()
+
+    def run(self):
 
         while True:
             try:
                 for k, v in self.choices.items():
-                    print("%d. %s" % (k, v[ITEM_NAME]))
+                    print("%d. %s" % (k, v.description))
 
-                user_choice = int(input("\nWhat's your choice?\n"))
+                user_choice = int(self.prompt_func("\nWhat's your choice?\n"))
 
                 if user_choice not in self.choices:
                     print('#Invalid choice!#\n')
                     continue
 
                 self.prepare_env()
-                self.choices[user_choice][ITEM_CALLABLE]()
+                self.choices[user_choice].callable()
                 self.reset_environment()
                 time.sleep(1)
             except ValueError:
@@ -871,6 +1108,10 @@ class RestDemo:
                 print("\n#Error is detected during demo. Please refer the log for the exception detail.#\n")
 
 
+def prompt_user(message):
+    return input(message)
+
+
 def print_properties(prop_collection, *properties):
     info = []
     for prop in properties:
@@ -879,7 +1120,7 @@ def print_properties(prop_collection, *properties):
 
 
 def main():
-    RestDemo().demo()
+    RestDemo(prompt_user).run()
 
 
 if __name__ == '__main__':

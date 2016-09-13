@@ -1,4 +1,8 @@
+import collections
+
+from model.QueryDocument import QueryDocument
 from model.RestResource import Resource
+from builtins import input
 
 __author__ = 'wangc31'
 
@@ -63,6 +67,61 @@ def generate_batch_operation(batch_id, description, uri, method, entity=None, **
     operation = {'id': batch_id, 'description': description, 'request': request}
 
     return _generate_resource(**operation)
+
+
+def generate_query_document(all_versions=True, include_hidden_objects=True, max_results_for_facets=10,
+                            types=('dm_sysobject',),
+                            columns=tuple(), sorts=tuple(), locations=tuple(), cs_collections=tuple(),
+                            expression_set=None,
+                            facet_definitions=tuple()):
+    query_doc = QueryDocument()
+    query_doc.all_versions = all_versions
+    query_doc.include_hidden_objects = include_hidden_objects
+    query_doc.max_results_for_facets = max_results_for_facets
+    query_doc.types = types
+    query_doc.columns = columns
+    query_doc.sorts = sorts
+    query_doc.locations = locations
+    query_doc.collections = cs_collections
+    query_doc.expression_set = expression_set
+    query_doc.facet_definitions = facet_definitions
+    return query_doc
+
+
+def generate_saved_search(name, description, is_public, query_doc):
+    properties = {'object_name': name, 'title': description, 'r_is_public': is_public}
+    raw_saved_search = {'properties': properties,
+                        'query-document': query_doc.dump()}
+    return _generate_resource(**raw_saved_search)
+
+
+def generate_search_template(name, description, is_public, query_doc):
+    properties = {'object_name': name, 'subject': description, 'r_is_public': is_public}
+    raw_saved_search = {'properties': properties,
+                        'query-document-template': query_doc.dump()}
+    return _generate_resource(**raw_saved_search)
+
+
+def generate_search_template_variables(variables):
+    return {'external-variables': [_fill_variable_value(variable.get('id'), variable.get('variable-type'),
+                                                        input('Input value for variable {}={}: '.format(
+                                                            variable.get('id'),
+                                                            variable.get('variable-value'))),
+                                                        variable.get('variable-value'))
+                                   for variable in variables]}
+
+
+def _fill_variable_value(variable_id, variable_type, value, original_value):
+    variable = collections.OrderedDict()
+    variable['variable-type'] = variable_type
+    variable['id'] = variable_id
+
+    if value:
+        variable['variable-value'] = value
+    else:
+        variable['variable-value'] = original_value
+
+    return variable
 
 
 def _generate_resource(**raw_resource):
