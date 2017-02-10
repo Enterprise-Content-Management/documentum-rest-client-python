@@ -29,10 +29,11 @@ class Location(object):
         self.value = value
 
     def as_dict(self):
-        location = collections.OrderedDict()
-        location['location-type'] = self.location_type
-        location['repository'] = self.repository
-        location['descendent'] = self.descendent
+        location = collections.OrderedDict([
+            ('location-type', self.location_type),
+            ('repository', self.repository),
+            ('descendent', self.descendent)
+        ])
 
         if self.location_type == 'id-location':
             location['id'] = self.value
@@ -51,11 +52,9 @@ class ExpSet(object):
         self.expressions = expressions
 
     def as_dict(self):
-        return {
-            "expression-type": "expression-set",
-            "operator": self.operator,
-            "expressions": [exp.as_dict() for exp in self.expressions]
-        }
+        collections.OrderedDict([("expression-type", "expression-set"),
+                                 ("operator", self.operator),
+                                 ("expressions", [exp.as_dict() for exp in self.expressions])])
 
     def __repr__(self):
         return 'ExpSet({}, {})'.format(self.operator, self.expressions)
@@ -68,12 +67,12 @@ class FtExp(object):
         self.is_template = is_template
 
     def as_dict(self):
-        return {
-            "expression-type": "fulltext",
-            "value": self.value,
-            "fuzzy": self.fuzzy,
-            "template": self.is_template
-        }
+        return collections.OrderedDict([
+            ("expression-type", "fulltext"),
+            ("value", self.value),
+            ("fuzzy", self.fuzzy),
+            ("template", self.is_template)
+        ])
 
     def __repr__(self):
         return 'FtExp({}, {})'.format(self.value, self.fuzzy)
@@ -148,7 +147,7 @@ rest_query.facet_definitions = [
 
 def main():
     if __name__ == '__main__':
-        print rest_query.dump()
+        print(rest_query.dump())
 
 
 main()

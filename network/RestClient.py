@@ -613,7 +613,8 @@ class RestClient:
         :return: search results
         """
         print(variables)
-        return self._link_post(search_template.find_link(RestLink.REL_SEARCH_EXECUTION), data=variables,
+        return self._link_post(search_template.find_link(RestLink.REL_SEARCH_EXECUTION),
+                               data=variables.representation(),
                                params=params).resource()
 
     def materialize(self, lightweight_obj):
