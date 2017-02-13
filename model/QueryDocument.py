@@ -52,9 +52,9 @@ class ExpSet(object):
         self.expressions = expressions
 
     def as_dict(self):
-        collections.OrderedDict([("expression-type", "expression-set"),
-                                 ("operator", self.operator),
-                                 ("expressions", [exp.as_dict() for exp in self.expressions])])
+        return collections.OrderedDict([("expression-type", "expression-set"),
+                                        ("operator", self.operator),
+                                        ("expressions", [exp.as_dict() for exp in self.expressions])])
 
     def __repr__(self):
         return 'ExpSet({}, {})'.format(self.operator, self.expressions)
@@ -134,20 +134,3 @@ class QueryDocument(object):
 
     def __str__(self):
         return self.dump()
-
-
-rest_query = QueryDocument()
-rest_query.types = ['dm_sysobject']
-rest_query.columns = ['object_name']
-rest_query.sorts = [Sort('object_name', True, 'en', True)]
-rest_query.expression_set = ExpSet('AND', FtExp('emc')).as_dict()
-rest_query.facet_definitions = [
-    FacetDefinition(facet_id='facet_r_object_type', attributes=['r_object_type'])]
-
-
-def main():
-    if __name__ == '__main__':
-        print(rest_query.dump())
-
-
-main()
