@@ -1,11 +1,9 @@
 import collections
 import inspect
-import json
 import logging
 import logging.config
 import sys
 import time
-
 from builtins import input
 from configparser import ConfigParser
 
@@ -14,10 +12,9 @@ from model.QueryDocument import Sort, ExpSet, FtExp, FacetDefinition
 from network import RestClient
 from network.RestClient import MEDIA_TYPE_DM_JSON
 from util import ResourceUtility
-from util.DemoUtil import print_resource_properties
-from util.DemoUtil import print_properties
-from util.DemoUtil import prompt_user
 from util.DemoUtil import format_json
+from util.DemoUtil import print_properties
+from util.DemoUtil import print_resource_properties
 
 __author__ = 'wangc31'
 
@@ -49,8 +46,8 @@ Demo = collections.namedtuple('Demo', ['version', 'description', 'callable'])
 
 
 class RestDemo:
-    def __init__(self, prompt_func):
-        self.prompt_func = prompt_func
+    def __init__(self, prompt):
+        self.prompt = prompt
 
         self._init_logger()
 
@@ -100,22 +97,22 @@ class RestDemo:
         config_parser.read("resources/rest.properties")
 
         self.REST_URI = config_parser.get("environment", "rest.host")
-        rest_uri = self.prompt_func("Input Documentum REST Entry Path: [default - %s]" % self.REST_URI)
+        rest_uri = self.prompt.rest_entry(self.REST_URI)
         if rest_uri:
             self.REST_URI = rest_uri
 
         self.REST_REPOSITORY = config_parser.get("environment", "rest.repository")
-        rest_repo = self.prompt_func("Input Repository Name: [default - %s]" % self.REST_REPOSITORY)
+        rest_repo = self.prompt.rest_repo(self.REST_REPOSITORY)
         if rest_repo:
             self.REST_REPOSITORY = rest_repo
 
         self.REST_USER = config_parser.get("environment", "rest.username")
-        rest_user = self.prompt_func("Input User Name: [default - %s]" % self.REST_USER)
+        rest_user = self.prompt.rest_user(self.REST_USER)
         if rest_user:
             self.REST_USER = rest_user
 
         self.REST_PWD = config_parser.get("environment", "rest.password")
-        rest_pwd = self.prompt_func("Input User Password: [default - %s]" % self.REST_PWD)
+        rest_pwd = self.prompt.rest_pwd(self.REST_PWD)
         if rest_pwd:
             self.REST_PWD = rest_pwd
 
@@ -124,7 +121,7 @@ class RestDemo:
     def _init_logger(self):
         logging.getLogger("requests").setLevel(logging.WARNING)
 
-        is_debug = self.prompt_func("Enable debugging messages (yes|no)? [default - no]")
+        is_debug = self.prompt.demo_logging()
         if is_debug == 'yes':
             level = 'DEBUG'
         else:
@@ -321,7 +318,7 @@ class RestDemo:
         print_resource_properties(logger, new_content, 'object_name', 'r_object_id', 'format_name', 'full_content_size')
 
         logger.info('Create new rendition with large file for document %s...' % DEMO_NEW_DOCUMENT)
-        path = self.prompt_func('Input the file path. Press \'Enter\' directly to skip uploading file:\n')
+        path = self.prompt.content_file()
         if path:
             logger.info('Start to create document with file %s', path)
             try:
@@ -710,9 +707,8 @@ class RestDemo:
 
         self.step_separator('Execute the search template...')
 
-        time.sleep(1)
         input_variables = ResourceUtility.generate_search_template_variables(search_template.get('external-variables'),
-                                                                             self.prompt_func)
+                                                                             self.prompt.search_template_var)
 
         results = self.client.execute_search_template(search_template, variables=input_variables,
                                                       params={'items-per-page': '2', 'page': '1', 'inline': 'true'})
@@ -755,15 +751,12 @@ class RestDemo:
         logger.info("\n+++++++++++++++++++++++++++++++Value Assistance Start+++++++++++++++++++++++++++++++")
 
         logger.info('Get the value assistance of the type...')
-        dm_type_str = self.prompt_func(
-            'Input the type name with fixed value assistance list. Press \'Enter\' directly to skip.\n')
+        dm_type_str = self.prompt.type_fixed_va()
         if dm_type_str:
             dm_type = self.client.get_type(dm_type_str)
 
             if dm_type:
-                included_property = self.prompt_func(
-                    'Input attribute name of %s with fixed value assistance list. Press \'Enter\' directly to skip.\n'
-                    % dm_type_str)
+                included_property = self.prompt.attribute_fixed_va(dm_type_str)
 
                 value_assistance = self.client.get_value_assistance(dm_type,
                                                                     ResourceUtility.generate_assist_value_request(),
@@ -781,8 +774,7 @@ class RestDemo:
 
         # E.G. city_type.city depends on city_type.country
         # country China has cities Shanghai, Beijing, Chongqing, Grangzhou, Shenzhen and Tianjing
-        dm_type_str = self.prompt_func(
-            '\nInput the type name with value assistance dependencies. Press \'Enter\' directly to skip.\n')
+        dm_type_str = self.prompt.type_dep_va()
         if dm_type_str:
             dm_type = self.client.get_type(dm_type_str)
 
@@ -790,10 +782,9 @@ class RestDemo:
                 logger.info('Attribute %s.%s has dependency %s' % (
                     dm_type.get('name'), attr.get('name'), attr.get('dependencies')))
 
-            attr_name = self.prompt_func('Input the attribute name of %s which has dependencies:' % dm_type_str)
-            dependency_attr_name = self.prompt_func('Input the dependency name of %s.%s:\n' % (dm_type_str, attr_name))
-            dependency_attr_value = self.prompt_func(
-                'Input the dependency value of attribute %s:\n' % dependency_attr_name)
+            attr_name = self.prompt.attribute_va(dm_type_str)
+            dependency_attr_name = self.prompt.attribute_dep_va(dm_type_str, attr_name)
+            dependency_attr_value = self.prompt.attribute_dep_value_va(dependency_attr_name)
 
             properties = {dependency_attr_name: dependency_attr_value}
             value_assistance = self.client.get_value_assistance(dm_type,
@@ -933,7 +924,7 @@ class RestDemo:
 
         cabinet = self.client.get_cabinet(DEMO_CABINET)
 
-        sharable_type = self.prompt_func('\nInput the sharable type. Press \'Enter\' directly to skip.\n')
+        sharable_type = self.prompt.sharable_type()
         if not sharable_type:
             logger.info('Skip lightweight object demo.')
         else:
@@ -944,7 +935,7 @@ class RestDemo:
                                                          object_name=DEMO_SHARABLE_OBJECT,
                                                          title='demo_sharable_type'))
 
-            lightweight_type = self.prompt_func('\nInput the lightweight type:\n')
+            lightweight_type = self.prompt.lightweight_type()
             logger.info('Create object %s of lightweight type %s...' % (DEMO_LIGHT_WEITHT_OBJECT, lightweight_type))
             lw_obj = self.client.create_sysobj(sharable_obj,
                                                ResourceUtility.generate_sysobject(lightweight_type,
@@ -1000,7 +991,7 @@ class RestDemo:
         for entry in aspects.get_entries():
             logger.info('Aspect name: %s', entry.get('title'))
 
-        aspect_type = self.prompt_func('\nInput the aspect type to attach... Press \'Enter\' directly to skip.\n')
+        aspect_type = self.prompt.aspect_type()
 
         if aspect_type:
             cabinet = self.client.get_cabinet(DEMO_CABINET)
@@ -1095,7 +1086,7 @@ class RestDemo:
                 for k, v in self.choices.items():
                     print("%d. %s" % (k, v.description))
 
-                user_choice = int(self.prompt_func("\nWhat's your choice?\n"))
+                user_choice = int(self.prompt.demo_choice())
 
                 if user_choice not in self.choices:
                     print('#Invalid choice!#\n')
@@ -1113,8 +1104,101 @@ class RestDemo:
                 print("\n#Error is detected during demo. Please refer the log for the exception detail.#\n")
 
 
+class PromptUserInput(object):
+    rest_entry_msg = 'Input Documentum REST Entry Path: [default - {}]'
+
+    rest_repo_msg = 'Input Repository Name: [default - {}]'
+
+    rest_user_msg = 'Input User Name: [default - {}]'
+
+    rest_pwd_msg = 'Input User Password: [default - {}]'
+
+    demo_logging_msg = 'Enable debugging messages (yes|no)? [default - no]'
+
+    demo_choice_msg = '\nWhat\'s your choice?\n'
+
+    aspect_type_msg = '\nInput the aspect type to attach... Press \'Enter\' directly to skip.\n'
+
+    content_file_msg = 'Input the file path. Press \'Enter\' directly to skip uploading file:\n'
+
+    sharable_type_msg = '\nInput the sharable type. Press \'Enter\' directly to skip.\n'
+
+    lightweight_type_msg = '\nInput the lightweight type:\n'
+
+    search_template_var_msg = 'Input value for variable {}={}: '
+
+    type_fixed_va_msg = 'Input the type name with fixed value assistance list. Press \'Enter\' directly to skip.\n'
+
+    attribute_fixed_va_msg = 'Input attribute name of {} with fixed value assistance list. ' \
+                             'Press \'Enter\' directly to skip.\n'
+
+    type_dep_va_msg = '\nInput the type name with value assistance dependencies. Press \'Enter\' directly to skip.\n'
+
+    attribute_va_msg = 'Input the attribute name of {} which has dependencies:'
+
+    attribute_dep_va_msg = 'Input the dependency name of {}.{}:\n'
+
+    attribute_dep_value_va_msg = 'Input the dependency value of attribute {}:\n'
+
+    @staticmethod
+    def prompt_func(message):
+        time.sleep(0.2)
+        return input(message)
+
+    def rest_entry(self, default_entry):
+        return self.prompt_func(self.rest_entry_msg.format(default_entry))
+
+    def rest_repo(self, default_repo):
+        return self.prompt_func(self.rest_repo_msg.format(default_repo))
+
+    def rest_user(self, default_user):
+        return self.prompt_func(self.rest_user_msg.format(default_user))
+
+    def rest_pwd(self, default_pwd):
+        return self.prompt_func(self.rest_pwd_msg.format(default_pwd))
+
+    def demo_logging(self):
+        return self.prompt_func(self.demo_logging_msg)
+
+    def demo_choice(self):
+        return self.prompt_func(self.demo_choice_msg)
+
+    def aspect_type(self):
+        return self.prompt_func(self.aspect_type_msg)
+
+    def content_file(self):
+        return self.prompt_func(self.content_file_msg)
+
+    def sharable_type(self):
+        return self.prompt_func(self.sharable_type_msg)
+
+    def lightweight_type(self):
+        return self.prompt_func(self.lightweight_type_msg)
+
+    def search_template_var(self, var_id, var_value):
+        return self.prompt_func(self.search_template_var_msg.format(var_id, var_value))
+
+    def type_fixed_va(self):
+        return self.prompt_func(self.type_fixed_va_msg)
+
+    def attribute_fixed_va(self, fixed_type):
+        return self.prompt_func(self.attribute_fixed_va_msg.format(fixed_type))
+
+    def type_dep_va(self):
+        return self.prompt_func(self.type_dep_va_msg)
+
+    def attribute_va(self, dep_type):
+        return self.prompt_func(self.attribute_va_msg.format(dep_type))
+
+    def attribute_dep_va(self, dep_type, attr):
+        return self.prompt_func(self.attribute_dep_va_msg.format(dep_type, attr))
+
+    def attribute_dep_value_va(self, dep_attr):
+        return self.prompt_func(self.attribute_dep_value_va_msg.format(dep_attr))
+
+
 def main():
-    RestDemo(prompt_user).run()
+    RestDemo(PromptUserInput()).run()
 
 
 if __name__ == '__main__':

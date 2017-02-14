@@ -3,11 +3,11 @@ import json
 
 
 class Sort(object):
-    def __init__(self, prop, ascending, lang, ascii):
+    def __init__(self, prop, ascending, lang, is_ascii):
         self.property = prop
         self.ascending = ascending
         self.lang = lang
-        self.ascii = ascii
+        self.ascii = is_ascii
 
     def as_dict(self):
         return {

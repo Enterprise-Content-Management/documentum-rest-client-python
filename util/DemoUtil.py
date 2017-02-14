@@ -1,10 +1,6 @@
 import json
 
 
-def prompt_user(message):
-    return input(message)
-
-
 def print_properties(logger, prop_collection, *properties):
     info = []
     for prop in properties:

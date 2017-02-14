@@ -2,9 +2,6 @@ import collections
 
 from model.QueryDocument import QueryDocument
 from model.RestResource import Resource
-from builtins import input
-
-from util import DemoUtil
 
 __author__ = 'wangc31'
 
@@ -104,12 +101,10 @@ def generate_search_template(name, description, is_public, query_doc):
     return _generate_resource(**raw_saved_search)
 
 
-def generate_search_template_variables(variables, prompt_func):
+def generate_search_template_variables(variables, prompt_var):
     external_variables = {'external-variables': [_fill_variable_value(variable.get('id'), variable.get('variable-type'),
-                                                                      prompt_func(
-                                                                          'Input value for variable {}={}: '.format(
-                                                                              variable.get('id'),
-                                                                              variable.get('variable-value'))),
+                                                                      prompt_var(variable.get('id'),
+                                                                                 variable.get('variable-value')),
                                                                       variable.get('variable-value'))
                                                  for variable in variables]}
     return _generate_resource(**external_variables)
