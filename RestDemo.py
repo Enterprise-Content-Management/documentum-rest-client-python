@@ -17,6 +17,7 @@ from util import ResourceUtility
 from util.DemoUtil import print_resource_properties
 from util.DemoUtil import print_properties
 from util.DemoUtil import prompt_user
+from util.DemoUtil import format_json
 
 __author__ = 'wangc31'
 
@@ -308,7 +309,7 @@ class RestDemo:
         logger.info('Get primary content of %s...' % DEMO_NEW_DOCUMENT)
         primary_content = self.client.get_primary_content(new_doc, params={'media-url-policy': 'all'})
         print_resource_properties(logger, primary_content, 'object_name', 'r_object_id', 'format_name',
-                                       'full_content_size')
+                                  'full_content_size')
 
         logger.info('All media URLs for primary content of %s...' % DEMO_NEW_DOCUMENT)
         for link in primary_content.all_links():
@@ -322,13 +323,14 @@ class RestDemo:
         logger.info('Create new rendition with large file for document %s...' % DEMO_NEW_DOCUMENT)
         path = self.prompt_func('Input the file path. Press \'Enter\' directly to skip uploading file:\n')
         if path:
+            logger.info('Start to create document with file %s', path)
             try:
                 with open(path, 'rb') as f:
                     new_content = self.client.create_content(new_doc, content=f,
                                                              content_type=RestClient.MEDIA_TYPE_OCTET_STREAM,
                                                              params={'primary': 'false'})
                     print_resource_properties(logger, new_content, 'object_name', 'r_object_id', 'format_name',
-                                                   'full_content_size')
+                                              'full_content_size')
             except IOError:
                 logger.info('The file %s does not exist or can not be opened.' % path)
         else:
@@ -707,7 +709,11 @@ class RestDemo:
                 format_json(search_template.get('query-document-template')), indent=4))
 
         self.step_separator('Execute the search template...')
-        input_variables = ResourceUtility.generate_search_template_variables(search_template.get('external-variables'))
+
+        time.sleep(1)
+        input_variables = ResourceUtility.generate_search_template_variables(search_template.get('external-variables'),
+                                                                             self.prompt_func)
+
         results = self.client.execute_search_template(search_template, variables=input_variables,
                                                       params={'items-per-page': '2', 'page': '1', 'inline': 'true'})
         logger.info('Object names in page %d...', 2)
@@ -1074,8 +1080,6 @@ class RestDemo:
 
         logger.info("+++++++++++++++++++++++++++++++Reset Environment End+++++++++++++++++++++++++++++++")
 
-
-
     def run_all(self):
         self.prepare_env()
         [item.callable()
@@ -1107,17 +1111,6 @@ class RestDemo:
                 logger.exception(e)
                 time.sleep(1)
                 print("\n#Error is detected during demo. Please refer the log for the exception detail.#\n")
-
-
-# def print_properties(prop_collection, *properties):
-#     info = []
-#     for prop in properties:
-#         info.append('%s: %s' % (prop, prop_collection.get(prop)))
-#     logger.info('>%s\n', ", ".join(info))
-
-
-def format_json(raw_str):
-    return json.dumps(json.loads(raw_str))
 
 
 def main():

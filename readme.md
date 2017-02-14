@@ -49,11 +49,7 @@ As there would be different configuration for kinds of operating systems and Pyt
 4. Run command to install library [requests](http://docs.python-requests.org/en/latest/) and other dependencies.
 
    ```
-   pip install requests
-
-   pip install configparser
-
-   pip install future	
+   pip install -r requirements.txt
    ```
 
 5. Navigate to the project home directory.

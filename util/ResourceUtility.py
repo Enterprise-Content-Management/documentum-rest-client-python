@@ -104,13 +104,12 @@ def generate_search_template(name, description, is_public, query_doc):
     return _generate_resource(**raw_saved_search)
 
 
-def generate_search_template_variables(variables):
+def generate_search_template_variables(variables, prompt_func):
     external_variables = {'external-variables': [_fill_variable_value(variable.get('id'), variable.get('variable-type'),
-                                                                      DemoUtil.prompt_user(
+                                                                      prompt_func(
                                                                           'Input value for variable {}={}: '.format(
-                                                                              'id',
-                                                                              'variable-value'))
-                                                                      ,
+                                                                              variable.get('id'),
+                                                                              variable.get('variable-value'))),
                                                                       variable.get('variable-value'))
                                                  for variable in variables]}
     return _generate_resource(**external_variables)
