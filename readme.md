@@ -7,7 +7,7 @@ Documentum REST Python Client Samples
 
 This is a simple Python client for *Documentum REST Services*.
 
-##What the demo demonstrates?
+## What the demo demonstrates?
 
 It will do the following jobs for your reference.  
 
@@ -29,14 +29,14 @@ It will do the following jobs for your reference.
 
 
 
-##Requirements
+## Requirements
 1. Python 2.7 - 3.5.
 2. Library [request](http://docs.python-requests.org/en/latest/) is installed.
 3. Package configparser and future are installed.
 4. *Documentum REST Services 7.2* is deployed.
 
 
-##Instruction
+## Instruction
 The instruction helps to prepare environment and run the demo.
 As there would be different configuration for kinds of operating systems and Python versions, view the references via links provided.
 
@@ -62,5 +62,5 @@ As there would be different configuration for kinds of operating systems and Pyt
 
         python RestDemo.py
 
-##Demo
+## Demo
 <img src="demo/python-demo.gif" width="1000">
